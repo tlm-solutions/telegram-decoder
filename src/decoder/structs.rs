@@ -4,30 +4,30 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Telegram {
-    time_stamp: u64,
-    lat: f64,
-    lon: f64,
-    station_id: u32,
-    line: u32,
-    destination_number: u32,
-    priority: u32,
-    sign_of_deviation: u32,
-    value_of_deviation: u32,
-    reporting_point: u32,
-    request_for_priority: u32,
-    run_number: u32,
-    reserve: u32,
-    train_length: u32,
-    junction: u32,
-    junction_number: u32,
+    pub time_stamp: u64,
+    pub lat: f64,
+    pub lon: f64,
+    pub station_id: u32,
+    pub line: u32,
+    pub destination_number: u32,
+    pub priority: u32,
+    pub sign_of_deviation: u32,
+    pub value_of_deviation: u32,
+    pub reporting_point: u32,
+    pub request_for_priority: u32,
+    pub run_number: u32,
+    pub reserve: u32,
+    pub train_length: u32,
+    pub junction: u32,
+    pub junction_number: u32,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Config {
-    name: String,
-    lat: f64,
-    lon: f64,
-    station_id: u32
+    pub name: String,
+    pub lat: f64,
+    pub lon: f64,
+    pub station_id: u32,
 }
 
 impl Telegram {
@@ -45,7 +45,7 @@ impl Telegram {
         Telegram {
             time_stamp: since_the_epoch.as_secs(),
             lat: station_config.lat, //51.027107,
-            lon: station_config.lon,//13.723566,
+            lon: station_config.lon, //13.723566,
             station_id: station_config.station_id,
             sign_of_deviation: (byte_array[1] >> 7) as u32, //ZV Zeit Vorzeichen
             value_of_deviation: ((byte_array[1] >> 4) & 0x7) as u32, //ZW Zahlen Wert
@@ -60,8 +60,29 @@ impl Telegram {
                 + ((byte_array[8] as u32) >> 4)) as u32, // ZN Zielnummer
             reserve: ((byte_array[8] >> 3) & 0x1) as u32,                           // R reserve
             train_length: (byte_array[8] & 0x7) as u32,                             // ZL length
-            junction: (reporting_point >> 2) / 10 as u32,                                // 10
+            junction: (reporting_point >> 2) / 10 as u32,                           // 10
             junction_number: ((reporting_point >> 2) - 10 * ((reporting_point >> 2) / 10)) as u32,
         }
+    }
+}
+
+impl PartialEq for Telegram {
+    fn eq(&self, other: &Self) -> bool {
+        self.lat == other.lat &&
+            self.lon == other.lon &&
+            self.station_id == other.station_id &&
+            self.sign_of_deviation == other.sign_of_deviation &&
+            self.value_of_deviation == other.value_of_deviation &&
+            self.reporting_point == other.reporting_point &&
+            self.priority == other.priority &&
+            self.request_for_priority == other.request_for_priority &&
+            self.line == other.line &&
+            self.run_number == other.run_number &&
+            self.destination_number == other.destination_number &&
+            self.reserve == other.reserve &&
+            self.train_length == other.train_length &&
+            self.junction == other.junction &&
+            self.junction_number == other.junction_number &&
+            self.destination_number == other.destination_number
     }
 }

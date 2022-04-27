@@ -1,7 +1,7 @@
-extern crate queues;
 pub mod structs;
+mod test;
 
-pub use structs::{Telegram, Config};
+pub use structs::{Config, Telegram};
 
 use crc_all::CrcAlgo;
 use lazy_static::lazy_static;
@@ -13,34 +13,41 @@ pub struct Decoder {
 }
 
 impl Decoder {
-
     pub fn new(config: &Config, server: &String) -> Decoder {
         Decoder {
-            station_config: config.clone(), 
-            server: server.clone()
+            station_config: config.clone(),
+            server: server.clone(),
         }
     }
 
     pub fn process(&self, data: &[u8]) {
         let data_copy = data.clone();
-        let mut byte_array: Vec<u8> = Vec::new();
-        const MAXIMUM_SIZE: usize = 20;
-
-        for i in 0..MAXIMUM_SIZE {
-            byte_array.push(Decoder::bit_to_bytes(&data_copy[i * 9..(i + 1) * 9 - 1]));
-        }
-
-        let response = self.correct_one_bit_errors(&byte_array);
+        
+        let response = self.full_decodation(data_copy);
         if response.len() == 0 {
             return;
         }
 
         let client = reqwest::Client::new();
         let url = format!("{}/formatted_telegram", &self.server);
+        println!("{}", url);
+        let rt = tokio::runtime::Runtime::new().unwrap();
         for telegram in response {
             println!("Telegram: {:?}", telegram);
-            client.post(&url).json(&telegram).send();
+
+            rt.block_on(client.post(&url).json(&telegram).send());
         }
+    }
+
+    pub fn full_decodation(&self, data:&[u8]) -> Vec<Telegram>{
+        let mut byte_array: Vec<u8> = Vec::new();
+        const MAXIMUM_SIZE: usize = 20;
+
+        for i in 0..MAXIMUM_SIZE {
+            byte_array.push(Decoder::bit_to_bytes(&data[i * 9..(i + 1) * 9 - 1]));
+        }
+
+        self.correct_one_bit_errors(&byte_array)
     }
 
     // converts a list of bits into a single byte
@@ -81,7 +88,7 @@ impl Decoder {
             // there are multiple types of packages floating around so we take
             // the telegram which has the correct looking crc code
             for position in 4..(byte_array.len() - 1) {
-                if crc_function(position) == Decoder::crc16_umts(&byte_array[0..position]){
+                if crc_function(position) == Decoder::crc16_umts(&byte_array[0..position]) {
                     length = position;
                 }
             }
@@ -103,7 +110,7 @@ impl Decoder {
                     return None;
                 }
 
-                if crc_function(9) != Decoder::crc16_umts(&byte_array[0..9]){
+                if crc_function(9) != Decoder::crc16_umts(&byte_array[0..9]) {
                     return None;
                 }
 
@@ -133,7 +140,7 @@ impl Decoder {
                 for j in 0..8 {
                     let mut tmp = payload.clone();
                     tmp[i] ^= 1 << j;
-                    match self.decode(&tmp){
+                    match self.decode(&tmp) {
                         Some(telegram) => {
                             collection.push(telegram);
                         }
