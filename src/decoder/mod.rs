@@ -43,7 +43,11 @@ impl Decoder {
         let mut byte_array: Vec<u8> = Vec::new();
         const MAXIMUM_SIZE: usize = 20;
 
+
         for i in 0..MAXIMUM_SIZE {
+            if (i + 1) * 9 - 1 >= data.len() {
+                break;
+            }
             byte_array.push(Decoder::bit_to_bytes(&data[i * 9..(i + 1) * 9 - 1]));
         }
 
@@ -118,8 +122,6 @@ impl Decoder {
                 if length == 6 {
                     return Some(Telegram::parse(byte_array, &self.station_config));
                 }
-                return None;
-            } else if mode == 9 && length > 4 {
                 return None;
             } else {
                 return None;
