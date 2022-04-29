@@ -1,67 +1,54 @@
 {
-    // AP 3.1.1(.2) DDL003
-    102: "LSA Anton-/Leipziger Straße",
-    // AP 3.2.1 DDL072
-    103: "Anton-/Zur Eisenbahnstraße",
-    // Bf Neustadt
-    // AP 3.3.1(.2) DDL071
-    104: "Schlesischer Platz",
-    // AP 3.4.1.1
-    107: "Albertplatz",
-    108: "Albertplatz West",
-    109: "Bautzner/Rothenburger",
-    // AP 3.10.1(.2) DDL036
-    119: "Straßburger Platz",
-    // AP 3.19.1 DDL310
-    120: "Lennéstraße/Hauptallee",
-    121: "Lennéplatz",
-    136: "Könneritzstraße/Jahnstraße",
+    "102": "LSA Anton-/Leipziger Straße",
+    "103": "Anton-/Zur Eisenbahnstraße",
+    "104": "Schlesischer Platz",
+    "107": "Albertplatz",
+    "108": "Albertplatz West",
+    "109": "Bautzner/Rothenburger",
+    "119": "Straßburger Platz",
+    "120": "Lennéstraße/Hauptallee",
+    "121": "Lennéplatz",
+    "136": "Könneritzstraße/Jahnstraße",
 
-    200: "Synagoge",
-    // AP 3.3.1.1
-    // ???
-    201: "St. Petersburger Straße/Pulmann-Newa",
-    203: "Pirnaischer Platz",
-    // AP 3.6.1.1
-    204: "Rathenauplatz",
-    // AP 3.5.1.1
-    205: "Carolaplatz",
-    208: "Bodenbacher / Zwinglistraße",
-    268: "Albertplatz Süd",
+    "200": "Synagoge",
+    "201": "St. Petersburger Straße/Pulmann-Newa",
+    "203": "Pirnaischer Platz",
+    "204": "Rathenauplatz",
+    "205": "Carolaplatz",
+    "208": "Bodenbacher / Zwinglistraße",
+    "268": "Albertplatz Süd",
 
-    324: "Fetscherplatz",
-    346: "Schillerplatz",
-    363: "Blasewitzer /Fetscherstraße",
+    "324": "Fetscherplatz",
+    "346": "Schillerplatz",
+    "363": "Blasewitzer /Fetscherstraße",
 
-    421: "Wasaplatz",
-    429: "Moränenende/Breitscheidstraße",
-    435: "Moränenende/Wilhelm-Liebknecht-Straße",
-    459: "Mügelner Straße/Moränenende",
+    "421": "Wasaplatz",
+    "429": "Moränenende/Breitscheidstraße",
+    "435": "Moränenende/Wilhelm-Liebknecht-Straße",
+    "459": "Mügelner Straße/Moränenende",
 
-    504: "Reichenbachstraße",
-    506: "Fritz-Foerster-Platz",
+    "504": "Reichenbachstraße",
+    "506": "Fritz-Foerster-Platz",
 
-    604: "Nürnberger /Budapester Str.",
-    606: "Chemnitzer /Nöthritzer Str.",
-    651: "Nürnberger Platz",
+    "604": "Nürnberger /Budapester Str.",
+    "606": "Chemnitzer /Nöthritzer Str.",
+    "651": "Nürnberger Platz",
 
-    804: "Tharandter /Kesselsdorfer Straße",
-    // AP 3.35.1.2 DDL069
-    851: "Löbtauer Str. / Fröbelstraße",
+    "804": "Tharandter /Kesselsdorfer Straße",
+    "851": "Löbtauer Str. / Fröbelstraße",
 
-    1101: "Louisenstraße",
-    1102: "Bischofsweg",
-    1103: "Tannenstraße",
-    1104: "Staufenbergallee",
+    "1101": "Louisenstraße",
+    "1102": "Bischofsweg",
+    "1103": "Tannenstraße",
+    "1104": "Staufenbergallee",
 
-    1202: "LSA BTZ <-> Pulsnitzer",
-    1203: "Pulsnitzer Straße",
-    1205: "Diakonissenkrankenhaus",
-    1220: "Nordstraße",
+    "1202": "LSA BTZ <-> Pulsnitzer",
+    "1203": "Pulsnitzer Straße",
+    "1205": "Diakonissenkrankenhaus",
+    "1220": "Nordstraße",
 
-    1301: "Körnerplatz/Grundstr.",
-    // AP 3.4.1(.2) DDL184
+    "1301": "Körnerplatz/Grundstr.",
 
-    1501: "Hansastraße/Eisenbahnstraße"
+    "1501": "Hansastraße/Eisenbahnstraße"
 }
 

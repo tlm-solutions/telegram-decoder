@@ -1,6 +1,7 @@
 extern crate derive_builder;
 
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::fmt;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Telegram {
@@ -85,5 +86,16 @@ impl PartialEq for Telegram {
             self.junction == other.junction &&
             self.junction_number == other.junction_number &&
             self.request_status == other.request_status
+    }
+}
+
+impl fmt::Display for Telegram {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        const FILE_STR: &'static str = include_str!("../../stops.json");
+        let parsed: serde_json::Map<String, serde_json::Value> = serde_json::from_str(&FILE_STR).expect("JSON was not well-formatted");
+        let junction_string = self.junction.to_string();
+        let junction = parsed.get(&junction_string).map(|u| u.as_str().unwrap()).unwrap_or(&junction_string);
+
+        write!(f, "Line {} Run {} Destination {} - {} / {} / {}", self.line, self.run_number, self.destination_number, junction, self.junction_number, self.request_status)
     }
 }

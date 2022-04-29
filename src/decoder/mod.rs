@@ -33,7 +33,7 @@ impl Decoder {
         println!("{}", url);
         let rt = tokio::runtime::Runtime::new().unwrap();
         for telegram in response {
-            println!("Telegram: {:?}", telegram);
+            println!("Telegram: {}", telegram);
 
             rt.block_on(client.post(&url).json(&telegram).send());
         }

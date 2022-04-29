@@ -68,6 +68,7 @@ fn test_decode_valid_r09_16_telegrams() {
         
         assert_eq!(received_telegram[0], expected_telegram);
 
+        println!("{}", received_telegram[0]);
         println!("{}/{} OK", i + 1, parsed.len());
     }
 }
