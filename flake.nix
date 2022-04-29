@@ -30,5 +30,19 @@
           telegram-decoder = package;
         });
       }
-    );
+      ) // {
+        hydraJobs =
+        let
+          hydraSystems = [
+            "x86_64-linux"
+            "aarch64-linux"
+          ];
+        in builtins.foldl' (hydraJobs: system:
+          builtins.foldl' (hydraJobs: pkgName:
+            nixpkgs.lib.recursiveUpdate hydraJobs {
+              ${pkgName}.${system} = self.packages.${system}.${pkgName};
+            }
+          ) hydraJobs (builtins.attrNames self.packages.${system})
+        ) {} hydraSystems; 
+      };
 }
