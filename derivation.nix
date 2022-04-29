@@ -1,7 +1,7 @@
 { naersk, src, pkgs, lib, pkg-config }:
 
 naersk.buildPackage {
-  pname = "telegram-decoer";
+  pname = "telegram-decoder";
   version = "0.1.0";
 
   src = ./.;

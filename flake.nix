@@ -35,7 +35,6 @@
         let
           hydraSystems = [
             "x86_64-linux"
-            "aarch64-linux"
           ];
         in builtins.foldl' (hydraJobs: system:
           builtins.foldl' (hydraJobs: pkgName:
