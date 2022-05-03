@@ -23,3 +23,5 @@ lazy_static = "*"
 reqwest = { version = "0.11", features = ["json"] } # reqwest with JSON parsing support
 futures = "0.3" # for our async / await blocks
 tokio = { version = "1.15", features = ["full"] }
+
+hex-string = "*"
