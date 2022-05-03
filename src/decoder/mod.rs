@@ -30,7 +30,6 @@ impl Decoder {
 
         let client = reqwest::Client::new();
         let url = format!("{}/formatted_telegram", &self.server);
-        println!("{}", url);
         let rt = tokio::runtime::Runtime::new().unwrap();
         for telegram in response {
             println!("Telegram: {}", telegram);
