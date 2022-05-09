@@ -8,12 +8,12 @@ use lazy_static::lazy_static;
 use reqwest;
 
 pub struct Decoder {
-    server: String,
+    server: Vec<String>,
     station_config: Config,
 }
 
 impl Decoder {
-    pub fn new(config: &Config, server: &String) -> Decoder {
+    pub fn new(config: &Config, server: &Vec<String>) -> Decoder {
         Decoder {
             station_config: config.clone(),
             server: server.clone(),
@@ -29,12 +29,13 @@ impl Decoder {
         }
 
         let client = reqwest::Client::new();
-        let url = format!("{}/formatted_telegram", &self.server);
         let rt = tokio::runtime::Runtime::new().unwrap();
         for telegram in response {
             println!("Telegram: {}", telegram);
-
-            rt.block_on(client.post(&url).json(&telegram).send());
+            for server in &self.server {
+                let url = format!("{}/formatted_telegram", &server);
+                rt.block_on(client.post(&url).json(&telegram).send());
+            }
         }
     }
 
