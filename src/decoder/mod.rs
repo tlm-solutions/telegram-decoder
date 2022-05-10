@@ -3,8 +3,7 @@ mod test;
 
 pub use structs::{Config, Telegram};
 
-use crc_all::CrcAlgo;
-use lazy_static::lazy_static;
+use g2poly::G2Poly;
 use reqwest;
 
 pub struct Decoder {
@@ -23,7 +22,7 @@ impl Decoder {
     pub fn process(&self, data: &[u8]) {
         let data_copy = data.clone();
         
-        let response = self.full_decodation(data_copy);
+        let response = self.decode(data_copy);
         if response.len() == 0 {
             return;
         }
@@ -38,10 +37,14 @@ impl Decoder {
         }
     }
 
-    pub fn full_decodation(&self, data:&[u8]) -> Vec<Telegram>{
-        let mut byte_array: Vec<u8> = Vec::new();
-        const MAXIMUM_SIZE: usize = 20;
+    pub fn decode(&self, data:&[u8]) -> Vec<Telegram>{
+		// minimum message size is 3 bytes + 2 bytes crc
+		const MINIMUM_SIZE: usize = 5;
+        // C09 fixed size of 4 bytes + variable length 4 bits (15 bytes) + 2 bytes CRC
+        // max length 4 + 15 + 2 = 21
+        const MAXIMUM_SIZE: usize = 21;
 
+        let mut byte_array: Vec<u8> = Vec::new();
 
         for i in 0..MAXIMUM_SIZE {
             if (i + 1) * 9 - 1 >= data.len() {
@@ -50,7 +53,88 @@ impl Decoder {
             byte_array.push(Decoder::bit_to_bytes(&data[i * 9..(i + 1) * 9 - 1]));
         }
 
-        self.correct_one_bit_errors(&byte_array)
+        let mut collection: Vec<Telegram> = Vec::new();
+
+		// Abort if we don't have enough data for a packet
+		if byte_array.len() < MINIMUM_SIZE {
+			return collection;
+		}
+
+		// try decoding for every possible length
+        for telegram_length in MINIMUM_SIZE..(byte_array.len() - 1) {
+            let mut telegram_array = Vec::new();
+            telegram_array.extend_from_slice(&byte_array[0..telegram_length]);
+
+			// invert crc
+			telegram_array[telegram_length - 2] ^= 0xff;
+			telegram_array[telegram_length - 1] ^= 0xff;
+
+			let rem = Decoder::crc16_remainder(&telegram_array);
+
+			if rem == G2Poly(0) {
+				// no errors, decode
+				match self.parse_telegram(&telegram_array[0..(telegram_length - 2)]) {
+					Some(telegram) => {
+						collection.push(telegram);
+					}
+					None => {}
+				};
+			} else {
+				// errors. try to fix them
+			}
+        }
+
+        return collection;
+    }
+
+	// data is a vector of data without crc
+    // TODO: change this into a vector. There is the possibilty for a valid R09 telegram being a
+    // valid C09 telegram and vice versa.
+    fn parse_telegram(&self, data: &[u8]) -> Option<Telegram> {
+        let mode: u8 = data[0] >> 4;
+        let length: usize = data.len();
+
+        // length has to be at least 3 bytes
+        if length < 3 {
+            return None;
+        }
+
+        // these modes may only have length 3 (R telegrams) or 4 (C telegrams)
+        // lower bound is already checked above
+        if mode <= 4 || mode >= 10 {
+            if length > 4 {
+                return None;
+            }
+        }
+
+        if mode == 9 {
+            // parse R09.x
+            if 3 + (data[1] & 0xf) as usize == length {
+                return self.parse_r09(&data);
+            }
+            // parse C09.x
+            if 4 + (data[2] & 0xf) as usize == length {
+                // TODO
+                return None;
+            }
+        }
+
+        // TODO: parse every other mode
+
+		return None;
+	}
+
+    fn parse_r09(&self, data: &[u8]) -> Option<Telegram> {
+        // lower nibble of the mode
+        let r09_type = data[0] & 0xf;
+
+        // decode R09.1x
+        if r09_type == 1 {
+            // TODO: if BCD is not BCD, throw it out
+            return Some(Telegram::parse(data, &self.station_config));
+        }
+
+        return None;
     }
 
     // converts a list of bits into a single byte
@@ -70,87 +154,21 @@ impl Decoder {
         }
     }
 
-    fn crc16_umts(data: &[u8]) -> u32 {
-        lazy_static! {
-            static ref CRC16_UMTS: CrcAlgo<u32> = CrcAlgo::<u32>::new(0x16f63, 16, 0x0, 0x0, true);
-        }
+    fn crc16_remainder(data: &Vec<u8>) -> G2Poly {
+        const POLY: G2Poly = G2Poly(0x16f63);
+        const ALPHA: G2Poly = G2Poly(0b10);
 
-        let crc = &mut 0u32;
-        CRC16_UMTS.init_crc(crc);
-        CRC16_UMTS.update_crc(crc, data)
-    }
+        let mut rem = G2Poly(0);
 
-    fn decode(&self, byte_array: &Vec<u8>) -> Option<Telegram> {
-        if byte_array.len() >= 5 {
-            let crc_function = |posistion: usize| -> u32 {
-                (((byte_array[posistion + 1] as u32) << 8u32 | byte_array[posistion] as u32)
-                    ^ 0xffffu32) as u32
-            };
-            let mut length: usize = 0;
-
-            // there are multiple types of packages floating around so we take
-            // the telegram which has the correct looking crc code
-            for position in 4..(byte_array.len() - 1) {
-                if crc_function(position) == Decoder::crc16_umts(&byte_array[0..position]) {
-                    length = position;
-                }
-            }
-
-            // no valid telegram was found aborting
-            if length == 0 {
-                return None;
-            }
-
-            // packages have different modes in the documentation refered to r1 - 15
-            let mode: u8 = byte_array[0] >> 4;
-
-            // lower nibble of the mode
-            let r09_type = byte_array[0] & 0xf;
-
-            if mode == 9 && r09_type == 1 {
-                length = (byte_array[1] & 0xf) as usize;
-                if byte_array.len() < 5usize + length {
-                    return None;
-                }
-
-                if crc_function(9) != Decoder::crc16_umts(&byte_array[0..9]) {
-                    return None;
-                }
-
-                // we have 3 bytes for error correction so the first 6 bytes contain the data
-                if length == 6 {
-                    return Some(Telegram::parse(byte_array, &self.station_config));
-                }
-                return None;
-            } else {
-                return None;
-            }
-        }
-        return None;
-    }
-
-    fn correct_one_bit_errors(&self, payload: &Vec<u8>) -> Vec<Telegram> {
-        let mut collection: Vec<Telegram> = Vec::new();
-
-        let result = self.decode(payload);
-
-        if result.is_some() {
-            collection.push(result.unwrap());
-        } else {
-            for i in 0..payload.len() {
-                for j in 0..8 {
-                    let mut tmp = payload.clone();
-                    tmp[i] ^= 1 << j;
-                    match self.decode(&tmp) {
-                        Some(telegram) => {
-                            collection.push(telegram);
-                        }
-                        None => {}
-                    };
+        for i in 0..data.len() {
+            for j in 0..8 {
+                let offset : u64 = (i * 8).try_into().unwrap();
+                if 1 == (data[data.len() - i - 1] >> (7-j)) & 0x1 {
+                    rem = (rem + ALPHA.pow_mod(j+offset, POLY)) % POLY;
                 }
             }
         }
 
-        return collection;
+        rem
     }
 }

@@ -120,27 +120,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
-name = "crc"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53757d12b596c16c78b83458d732a5d1a17ab3f53f2f7412f6fb57cc8a140ab3"
-dependencies = [
- "crc-catalog",
-]
-
-[[package]]
-name = "crc-catalog"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d0165d2900ae6778e36e80bbc4da3b5eefccee9ba939761f9c2882a5d9af3ff"
-
-[[package]]
-name = "crc_all"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8870eaf25cadb929c663b7f85e76bf9e82ceca6ac51c72c2bd8f029271187d4"
-
-[[package]]
 name = "darling"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -343,6 +322,12 @@ dependencies = [
  "pin-utils",
  "slab",
 ]
+
+[[package]]
+name = "g2poly"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e837767888fca507f07e89c90e0b350da7bbb89170f67a4655dc9bdc4cca457b"
 
 [[package]]
 name = "h2"
@@ -970,12 +955,10 @@ name = "telegram-decode"
 version = "0.1.0"
 dependencies = [
  "clap",
- "crc",
- "crc_all",
  "derive_builder",
  "futures",
+ "g2poly",
  "hex-string",
- "lazy_static",
  "regex",
  "reqwest",
  "serde",

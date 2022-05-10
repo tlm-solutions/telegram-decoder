@@ -65,7 +65,7 @@ fn test_decode_valid_r09_16_telegrams() {
             request_status: telegram.request_status,
         };
 
-        let received_telegram = decoder.full_decodation(&item.input.as_ref());
+        let received_telegram = decoder.decode(&item.input.as_ref());
 
         assert_eq!(received_telegram[0], expected_telegram);
 
