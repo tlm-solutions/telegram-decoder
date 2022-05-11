@@ -4,18 +4,65 @@ mod test;
 pub use structs::{Config, Telegram};
 
 use g2poly::G2Poly;
+use std::collections::HashMap;
 use reqwest;
 
 pub struct Decoder {
     server: String,
     station_config: Config,
+    maps: Vec<HashMap<u64, Vec<u8>>>,
 }
 
 impl Decoder {
     pub fn new(config: &Config, server: &String) -> Decoder {
+        let mut maps : Vec<HashMap<u64, Vec<u8>>> = Vec::new();
+
+        for len in 5..22 {
+            let mut map: HashMap<u64, Vec<u8>> = HashMap::new();
+
+            for i in 0..(len * 8) {
+                let mut data = vec![0u8; len];
+                let idx = (i / 8) as usize;
+                let pos = i % 8;
+                data[idx] ^= 1 << pos;
+
+                let value : u64 = Decoder::crc16_remainder(&data).0;
+
+                if let Some(_) = map.get_mut(&value) {
+                    assert!(false);
+                } else {
+                    map.insert(value, data);
+                }
+            }
+
+            // 2 bit errors
+            for i in 0..(len * 8){
+                for j in (i+1)..(len * 8) {
+                    let mut data = vec![0u8; len];
+                    let idx = (i / 8) as usize;
+                    let pos = i - idx * 8;
+                    data[idx] ^= 1 << pos;
+                    let idx = (j / 8) as usize;
+                    let pos = j - idx * 8;
+                    data[idx] ^= 1 << pos;
+
+                    let value : u64 = Decoder::crc16_remainder(&data).0;
+
+                    if let Some(_) = map.get_mut(&value) {
+                        assert!(false);
+                    } else {
+                        map.insert(value, data);
+                    }
+                }
+            }
+
+            maps.push(map)
+        }
+
         Decoder {
             station_config: config.clone(),
             server: server.clone(),
+            maps: maps,
         }
     }
 
@@ -81,6 +128,24 @@ impl Decoder {
 				};
 			} else {
 				// errors. try to fix them
+                if let Some(error) = self.maps[telegram_length - MINIMUM_SIZE].get(&rem.0) {
+                    assert!(error.len() == telegram_length);
+
+                    let mut repaired_telegram = Vec::new();
+                    repaired_telegram = telegram_array.clone();
+                    for i in 0..error.len() {
+                        repaired_telegram[i] ^= error[i];
+                    }
+
+                    assert_eq!(Decoder::crc16_remainder(&repaired_telegram), G2Poly(0));
+
+                    match self.parse_telegram(&repaired_telegram[0..(telegram_length - 2)]) {
+                        Some(telegram) => {
+                            collection.push(telegram);
+                        }
+                        None => {}
+                    };
+                }
 			}
         }
 
@@ -114,12 +179,20 @@ impl Decoder {
             }
             // parse C09.x
             if 4 + (data[2] & 0xf) as usize == length {
+                let c09_type = data[2] >> 4;
+                let c09_length = data[2] & 0xf;
+
                 // TODO
+                println!("[!] Recevied C09.{}.{}", c09_type, c09_length);
+
                 return None;
             }
+
+            return None;
         }
 
         // TODO: parse every other mode
+        println!("[!] Received C/R {}", mode);
 
 		return None;
 	}
@@ -127,11 +200,14 @@ impl Decoder {
     fn parse_r09(&self, data: &[u8]) -> Option<Telegram> {
         // lower nibble of the mode
         let r09_type = data[0] & 0xf;
+        let r09_length = data[1] & 0xf;
 
         // decode R09.1x
-        if r09_type == 1 {
+        if r09_type == 1 && r09_length == 6{
             // TODO: if BCD is not BCD, throw it out
             return Some(Telegram::parse(data, &self.station_config));
+        } else {
+            println!("[!] Recevied R09.{}.{}", r09_type, r09_length);
         }
 
         return None;

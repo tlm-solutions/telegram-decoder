@@ -26,50 +26,61 @@ struct ValidR09_16Telegram {
     output: TelegramFrame,
 }
 
-// Note this useful idiom: importing names from outer (for mod tests) scope.
-#[test]
-fn test_decode_valid_r09_16_telegrams() {
-    let config = Config {
-        name: "TEST".to_string(),
-        lat: 0.,
-        lon: 0.,
-        station_id: 0,
-    };
-
-    let server = "mockup".to_string();
-    let decoder = Decoder::new(&config, &server);
-    const FILE_STR: &'static str = include_str!("../../data/valid_r09_16_telegrams.json");
-    let parsed: Vec<ValidR09_16Telegram> =
-        serde_json::from_str(&FILE_STR).expect("JSON was not well-formatted");
-
-    for (i, item) in parsed.iter().enumerate() {
-        let telegram = &item.output;
-
-        let expected_telegram = Telegram {
-            time_stamp: 0,
-            lat: 0.0,
-            lon: 0.0,
+#[cfg(test)]
+macro_rules! decode_telegrams_from_file {
+    ($file: expr ) => {{
+        let config = Config {
+            name: "TEST".to_string(),
+            lat: 0.,
+            lon: 0.,
             station_id: 0,
-            line: format!("{:0>3}", telegram.ln.to_string()),
-            destination_number: format!("{:0>3}", telegram.zn.to_string()),
-            priority: telegram.pr,
-            sign_of_deviation: telegram.zv,
-            value_of_deviation: telegram.zw,
-            reporting_point: telegram.mp,
-            request_for_priority: telegram.ha,
-            run_number: format!("{:0>2}", telegram.kn.to_string()),
-            reserve: telegram.r,
-            train_length: telegram.zl,
-            junction: telegram.junction,
-            junction_number: telegram.junction_number,
-            request_status: telegram.request_status,
         };
 
-        let received_telegram = decoder.decode(&item.input.as_ref());
+        let server = "mockup".to_string();
+        let decoder = Decoder::new(&config, &server);
+        const FILE_STR: &'static str = include_str!($file);
+        let parsed: Vec<ValidR09_16Telegram> =
+            serde_json::from_str(&FILE_STR).expect("JSON was not well-formatted");
 
-        assert_eq!(received_telegram[0], expected_telegram);
+        for (i, item) in parsed.iter().enumerate() {
+            let telegram = &item.output;
 
-        println!("{}", received_telegram[0]);
-        println!("{}/{} OK", i + 1, parsed.len());
-    }
+            let expected_telegram = Telegram {
+                time_stamp: 0,
+                lat: 0.0,
+                lon: 0.0,
+                station_id: 0,
+                line: format!("{:0>3}", telegram.ln.to_string()),
+                destination_number: format!("{:0>3}", telegram.zn.to_string()),
+                priority: telegram.pr,
+                sign_of_deviation: telegram.zv,
+                value_of_deviation: telegram.zw,
+                reporting_point: telegram.mp,
+                request_for_priority: telegram.ha,
+                run_number: format!("{:0>2}", telegram.kn.to_string()),
+                reserve: telegram.r,
+                train_length: telegram.zl,
+                junction: telegram.junction,
+                junction_number: telegram.junction_number,
+                request_status: telegram.request_status,
+            };
+
+            let received_telegram = decoder.decode(&item.input.as_ref());
+
+            assert_eq!(received_telegram[0], expected_telegram);
+
+            println!("{}", received_telegram[0]);
+            println!("{}/{} OK", i + 1, parsed.len());
+        }
+    }};
+}
+
+#[test]
+fn test_decode_valid_r09_16_telegrams() {
+    decode_telegrams_from_file!("../../data/valid_r09_16_telegrams.json");
+}
+
+#[test]
+fn test_decode_1bit_error_r09_16_telegrams() {
+    decode_telegrams_from_file!("../../data/1bit_error_r09_16_telegrams.json");
 }
