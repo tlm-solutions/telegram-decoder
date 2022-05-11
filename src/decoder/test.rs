@@ -35,7 +35,7 @@ macro_rules! decode_telegrams_from_file {
             station_id: 0,
         };
 
-        let server = vec![ "mockup".to_string() ];
+        let server = vec!["mockup".to_string()];
         let decoder = Decoder::new(&config, &server);
         const FILE_STR: &'static str = include_str!($file);
         let parsed: Vec<ValidR09_16Telegram> =
