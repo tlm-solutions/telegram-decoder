@@ -21,6 +21,7 @@ impl Decoder {
         for len in 5..22 {
             let mut map: HashMap<u64, Vec<u8>> = HashMap::new();
 
+            // 1 bit errors
             for i in 0..(len * 8) {
                 let mut data = vec![0u8; len];
                 let idx = (i / 8) as usize;
@@ -29,7 +30,7 @@ impl Decoder {
 
                 let value: u64 = Decoder::crc16_remainder(&data).0;
 
-                if let Some(_) = map.get_mut(&value) {
+                if let Some(_) = map.get(&value) {
                     assert!(false);
                 } else {
                     map.insert(value, data);
@@ -41,15 +42,15 @@ impl Decoder {
                 for j in (i + 1)..(len * 8) {
                     let mut data = vec![0u8; len];
                     let idx = (i / 8) as usize;
-                    let pos = i - idx * 8;
+                    let pos = i % 8;
                     data[idx] ^= 1 << pos;
                     let idx = (j / 8) as usize;
-                    let pos = j - idx * 8;
+                    let pos = j % 8;
                     data[idx] ^= 1 << pos;
 
                     let value: u64 = Decoder::crc16_remainder(&data).0;
 
-                    if let Some(_) = map.get_mut(&value) {
+                    if let Some(_) = map.get(&value) {
                         assert!(false);
                     } else {
                         map.insert(value, data);
@@ -120,18 +121,15 @@ impl Decoder {
 
             let rem = Decoder::crc16_remainder(&telegram_array);
 
+            let mut telegrams : Vec<Vec<u8>> = Vec::new();
+
             if rem == G2Poly(0) {
                 // no errors, decode
-                match self.parse_telegram(&telegram_array[0..(telegram_length - 2)]) {
-                    Some(telegram) => {
-                        collection.push(telegram);
-                    }
-                    None => {}
-                };
+                telegrams.push((&telegram_array[0..(telegram_length - 2)]).to_vec())
             } else {
                 // errors. try to fix them
                 if let Some(error) = self.maps[telegram_length - MINIMUM_SIZE].get(&rem.0) {
-                    assert!(error.len() == telegram_length);
+                    assert_eq!(error.len(), telegram_length);
 
                     let mut repaired_telegram = telegram_array.clone();
                     for i in 0..error.len() {
@@ -140,13 +138,17 @@ impl Decoder {
 
                     assert_eq!(Decoder::crc16_remainder(&repaired_telegram), G2Poly(0));
 
-                    match self.parse_telegram(&repaired_telegram[0..(telegram_length - 2)]) {
-                        Some(telegram) => {
-                            collection.push(telegram);
-                        }
-                        None => {}
-                    };
+                    telegrams.push((&repaired_telegram[0..(telegram_length - 2)]).to_vec())
                 }
+            }
+
+            for telegram in telegrams {
+                match self.parse_telegram(&telegram) {
+                    Some(telegram) => {
+                        collection.push(telegram);
+                    }
+                    None => {}
+                };
             }
         }
 
