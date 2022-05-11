@@ -1,4 +1,5 @@
 pub mod structs;
+#[cfg(test)]
 mod test;
 
 pub use structs::{Config, Telegram};
@@ -8,13 +9,13 @@ use std::collections::HashMap;
 use reqwest;
 
 pub struct Decoder {
-    server: String,
+    server: Vec<String>,
     station_config: Config,
     maps: Vec<HashMap<u64, Vec<u8>>>,
 }
 
 impl Decoder {
-    pub fn new(config: &Config, server: &String) -> Decoder {
+    pub fn new(config: &Config, server: &Vec<String>) -> Decoder {
         let mut maps : Vec<HashMap<u64, Vec<u8>>> = Vec::new();
 
         for len in 5..22 {
@@ -75,12 +76,13 @@ impl Decoder {
         }
 
         let client = reqwest::Client::new();
-        let url = format!("{}/formatted_telegram", &self.server);
         let rt = tokio::runtime::Runtime::new().unwrap();
         for telegram in response {
             println!("Telegram: {}", telegram);
-
-            rt.block_on(client.post(&url).json(&telegram).send());
+            for server in &self.server {
+                let url = format!("{}/formatted_telegram", &server);
+                rt.block_on(client.post(&url).json(&telegram).send());
+            }
         }
     }
 
@@ -131,8 +133,7 @@ impl Decoder {
                 if let Some(error) = self.maps[telegram_length - MINIMUM_SIZE].get(&rem.0) {
                     assert!(error.len() == telegram_length);
 
-                    let mut repaired_telegram = Vec::new();
-                    repaired_telegram = telegram_array.clone();
+                    let mut repaired_telegram = telegram_array.clone();
                     for i in 0..error.len() {
                         repaired_telegram[i] ^= error[i];
                     }
@@ -205,7 +206,7 @@ impl Decoder {
         // decode R09.1x
         if r09_type == 1 && r09_length == 6{
             // TODO: if BCD is not BCD, throw it out
-            return Some(Telegram::parse(data, &self.station_config));
+            return Some(Telegram::parse(data));
         } else {
             println!("[!] Recevied R09.{}.{}", r09_type, r09_length);
         }

@@ -26,7 +26,6 @@ struct ValidR09_16Telegram {
     output: TelegramFrame,
 }
 
-#[cfg(test)]
 macro_rules! decode_telegrams_from_file {
     ($file: expr ) => {{
         let config = Config {
@@ -36,7 +35,7 @@ macro_rules! decode_telegrams_from_file {
             station_id: 0,
         };
 
-        let server = "mockup".to_string();
+        let server = vec![ "mockup".to_string() ];
         let decoder = Decoder::new(&config, &server);
         const FILE_STR: &'static str = include_str!($file);
         let parsed: Vec<ValidR09_16Telegram> =
@@ -47,9 +46,6 @@ macro_rules! decode_telegrams_from_file {
 
             let expected_telegram = Telegram {
                 time_stamp: 0,
-                lat: 0.0,
-                lon: 0.0,
-                station_id: 0,
                 line: format!("{:0>3}", telegram.ln.to_string()),
                 destination_number: format!("{:0>3}", telegram.zn.to_string()),
                 priority: telegram.pr,

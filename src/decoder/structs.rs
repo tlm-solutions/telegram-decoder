@@ -7,9 +7,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Telegram {
     pub time_stamp: u64,
-    pub lat: f64,
-    pub lon: f64,
-    pub station_id: u32,
     pub line: String,
     pub destination_number: String,
     pub priority: u32,
@@ -34,7 +31,7 @@ pub struct Config {
 }
 
 impl Telegram {
-    pub fn parse(byte_array: &[u8], station_config: &Config) -> Telegram {
+    pub fn parse(byte_array: &[u8]) -> Telegram {
         let start = SystemTime::now();
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)
@@ -49,9 +46,6 @@ impl Telegram {
         // discard the telegram if BCD characters contains something invalid
         Telegram {
             time_stamp: since_the_epoch.as_secs(),
-            lat: station_config.lat, //51.027107,
-            lon: station_config.lon, //13.723566,
-            station_id: station_config.station_id,
             sign_of_deviation: (byte_array[1] >> 7) as u32, //ZV Zeit Vorzeichen
             value_of_deviation: ((byte_array[1] >> 4) & 0x7) as u32, //ZW Zahlen Wert
             reporting_point: reporting_point,               //MP Melde punkt
@@ -91,10 +85,7 @@ impl Telegram {
 
 impl PartialEq for Telegram {
     fn eq(&self, other: &Self) -> bool {
-        self.lat == other.lat
-            && self.lon == other.lon
-            && self.station_id == other.station_id
-            && self.sign_of_deviation == other.sign_of_deviation
+        self.sign_of_deviation == other.sign_of_deviation
             && self.value_of_deviation == other.value_of_deviation
             && self.reporting_point == other.reporting_point
             && self.priority == other.priority

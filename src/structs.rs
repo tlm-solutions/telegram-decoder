@@ -14,8 +14,8 @@ pub struct Args {
     #[clap(short, long, default_value_t = 40000)]
     pub port: u32,
 
-    #[clap(short, long, default_value_t = String::from("http://academicstrokes.com"))]
-    pub server: String,
+    #[clap(short, long, min_values = 1)]
+    pub server: Vec<String>,
 
     #[clap(short, long, default_value_t = String::from("config.json"))]
     pub config: String,
