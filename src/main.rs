@@ -34,7 +34,7 @@ fn main() {
     println!("Starting DVB Dump Telegram Decoder ... ");
     let addr = format!("{}:{}", &args.host, &args.port);
     let socket = UdpSocket::bind(addr).unwrap();
-    let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) = mpsc::sync_channel(100);
+    let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) = mpsc::sync_channel(400);
 
     let _thread = thread::spawn(move || loop {
         let data = rx.recv().unwrap();
@@ -43,6 +43,6 @@ fn main() {
     loop {
         let mut buffer = [0; BUFFER_SIZE];
         let (_amt, _src) = socket.recv_from(&mut buffer).unwrap();
-        tx.send(buffer.clone());
+        tx.send(buffer.clone()).unwrap();
     }
 }

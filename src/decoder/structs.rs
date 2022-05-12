@@ -31,7 +31,7 @@ pub struct Config {
 }
 
 impl Telegram {
-    pub fn parse(byte_array: &[u8], station_config: &Config) -> Telegram {
+    pub fn parse(byte_array: &[u8]) -> Telegram {
         let start = SystemTime::now();
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)
@@ -42,6 +42,8 @@ impl Telegram {
             | ((byte_array[3] >> 4) << 4) as u32
             | (byte_array[3] & 0x0f) as u32; //MP Melde Punkt
 
+        // TODO: change line, run_number and destination_number back to a int.
+        // discard the telegram if BCD characters contains something invalid
         Telegram {
             time_stamp: since_the_epoch.as_secs(),
             sign_of_deviation: (byte_array[1] >> 7) as u32, //ZV Zeit Vorzeichen
