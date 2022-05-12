@@ -15,7 +15,7 @@ use clap::Parser;
 use std::fs::read_to_string;
 use std::net::UdpSocket;
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread;
 
 fn main() {
@@ -34,7 +34,7 @@ fn main() {
     println!("Starting DVB Dump Telegram Decoder ... ");
     let addr = format!("{}:{}", &args.host, &args.port);
     let socket = UdpSocket::bind(addr).unwrap();
-    let (tx, rx): (Sender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) = mpsc::channel();
+    let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) = mpsc::sync_channel(100);
 
     let _thread = thread::spawn(move || loop {
         let data = rx.recv().unwrap();
