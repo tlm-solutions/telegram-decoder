@@ -4,6 +4,9 @@ use hex_string::nibble_to_hexchar;
 use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[derive(Debug)]
+pub struct BCD(pub u32);
+
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Telegram {
     pub time_stamp: u64,
@@ -30,8 +33,24 @@ pub struct Config {
     pub station_id: u32,
 }
 
+impl BCD {
+    pub fn parse(bytes: &[u8]) -> Option<BCD> {
+        let mut number: u32 = 0;
+
+        for val in bytes {
+            if *val > 9 {
+                return None;
+            }
+
+            number = number * 10 + *val as u32;
+        }
+
+        Some(BCD(number))
+    }
+}
+
 impl Telegram {
-    pub fn parse(byte_array: &[u8]) -> Telegram {
+    pub fn parse(byte_array: &[u8]) -> Option<Telegram> {
         let start = SystemTime::now();
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)
@@ -42,44 +61,41 @@ impl Telegram {
             | ((byte_array[3] >> 4) << 4) as u32
             | (byte_array[3] & 0x0f) as u32; //MP Melde Punkt
 
-        // TODO: change line, run_number and destination_number back to a int.
-        // discard the telegram if BCD characters contains something invalid
-        Telegram {
+        let line = match BCD::parse(&[byte_array[4] & 0xf, byte_array[5] >> 4, byte_array[5] & 0xf])
+        {
+            Some(x) => x.0,
+            None => return None,
+        };
+        let run_number = match BCD::parse(&[byte_array[6] >> 4, byte_array[6] & 0xf]) {
+            Some(x) => x.0,
+            None => return None,
+        };
+        let destination_number =
+            match BCD::parse(&[byte_array[7] >> 4, byte_array[7] & 0xf, byte_array[8] >> 4]) {
+                Some(x) => x.0,
+                None => return None,
+            };
+        let reserve = match ((byte_array[8] >> 3) & 0x1) as u32 {
+            0 => 0,
+            _ => return None,
+        };
+
+        Some(Telegram {
             time_stamp: since_the_epoch.as_secs(),
             sign_of_deviation: (byte_array[1] >> 7) as u32, //ZV Zeit Vorzeichen
             value_of_deviation: ((byte_array[1] >> 4) & 0x7) as u32, //ZW Zahlen Wert
             reporting_point: reporting_point,               //MP Melde punkt
             priority: (byte_array[4] >> 6) as u32,          //PR Prioritet
             request_for_priority: ((byte_array[4] >> 4) & 0x3) as u32, // HA Anforderung Richtung
-            line: [
-                nibble_to_hexchar(&(byte_array[4] & 0xf)).unwrap(),
-                nibble_to_hexchar(&(byte_array[5] >> 4)).unwrap(),
-                nibble_to_hexchar(&(byte_array[5] & 0xf)).unwrap(),
-            ]
-            .iter()
-            .cloned()
-            .collect::<String>(), // LN Line Nummer
-            run_number: [
-                nibble_to_hexchar(&(byte_array[6] >> 4)).unwrap(),
-                nibble_to_hexchar(&(byte_array[6] & 0xf)).unwrap(),
-            ]
-            .iter()
-            .cloned()
-            .collect::<String>(), // KN Kurse Nummer
-            destination_number: [
-                nibble_to_hexchar(&(byte_array[7] >> 4)).unwrap(),
-                nibble_to_hexchar(&(byte_array[7] & 0xf)).unwrap(),
-                nibble_to_hexchar(&(byte_array[8] >> 4)).unwrap(),
-            ]
-            .iter()
-            .cloned()
-            .collect::<String>(), // ZN Zielnummer
-            reserve: ((byte_array[8] >> 3) & 0x1) as u32,   // R reserve
+            line: format!("{:03}", line),                   // LN Line Nummer
+            run_number: format!("{:02}", run_number),       // KN Kurse Nummer
+            destination_number: format!("{:03}", destination_number), // ZN Zielnummer
+            reserve: reserve,                               // R reserve
             train_length: (byte_array[8] & 0x7) as u32,     // ZL length
             junction: (reporting_point >> 2) / 10,
             junction_number: (reporting_point >> 2) % 10,
             request_status: reporting_point & 0x3 as u32,
-        }
+        })
     }
 }
 

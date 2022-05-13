@@ -121,7 +121,7 @@ impl Decoder {
 
             let rem = Decoder::crc16_remainder(&telegram_array);
 
-            let mut telegrams : Vec<Vec<u8>> = Vec::new();
+            let mut telegrams: Vec<Vec<u8>> = Vec::new();
 
             if rem == G2Poly(0) {
                 // no errors, decode
@@ -208,7 +208,7 @@ impl Decoder {
         // decode R09.1x
         if r09_type == 1 && r09_length == 6 {
             // TODO: if BCD is not BCD, throw it out
-            return Some(Telegram::parse(data));
+            return Telegram::parse(data);
         } else {
             println!("[!] Recevied R09.{}.{}", r09_type, r09_length);
         }
