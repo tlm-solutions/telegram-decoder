@@ -143,7 +143,7 @@ impl Decoder {
             }
 
             for telegram in telegrams {
-                match self.parse_telegram(&telegram) {
+                match Decoder::parse_telegram(&telegram) {
                     Some(telegram) => {
                         collection.push(telegram);
                     }
@@ -158,7 +158,7 @@ impl Decoder {
     // data is a vector of data without crc
     // TODO: change this into a vector. There is the possibilty for a valid R09 telegram being a
     // valid C09 telegram and vice versa.
-    fn parse_telegram(&self, data: &[u8]) -> Option<Telegram> {
+    fn parse_telegram(data: &[u8]) -> Option<Telegram> {
         let mode: u8 = data[0] >> 4;
         let length: usize = data.len();
 
@@ -178,7 +178,7 @@ impl Decoder {
         if mode == 9 {
             // parse R09.x
             if 3 + (data[1] & 0xf) as usize == length {
-                return self.parse_r09(&data);
+                return Decoder::parse_r09(&data);
             }
             // parse C09.x
             if 4 + (data[2] & 0xf) as usize == length {
@@ -207,10 +207,12 @@ impl Decoder {
         return None;
     }
 
-    fn parse_r09(&self, data: &[u8]) -> Option<Telegram> {
+    fn parse_r09(data: &[u8]) -> Option<Telegram> {
         // lower nibble of the mode
         let r09_type = data[0] & 0xf;
         let r09_length = data[1] & 0xf;
+
+        assert_eq!(r09_length as usize, 3 + data.len());
 
         // decode R09.1x
         if r09_type == 1 && r09_length == 6 {
