@@ -194,8 +194,15 @@ impl Decoder {
             return None;
         }
 
-        // TODO: parse every other mode
-        println!("[!] Received C/R {}", mode);
+        // We removed the one variable length telegrams of the R-series R09, others are 3 bytes
+        // long.
+        // The C-series has C09, which is variable length, but we don't know anything about C05-C08.
+        // They are probably only 4 bytes long, like other ones from the C-series, but we don't
+        // know.
+        match length {
+            3 => println!("[!] Received R {}", mode),
+            _ => println!("[!] Received C {}", mode),
+        };
 
         return None;
     }
