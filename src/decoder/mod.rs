@@ -58,6 +58,53 @@ impl Decoder {
                 }
             }
 
+            // 3 bit errors
+            // this might work sometimes...
+            // so the algorithm for creating the map is a bit more complicated
+            if len < 14 {
+                let mut blacklist: Vec<u64> = Vec::new();
+                let mut map_3bit: HashMap<u64, Vec<u8>> = HashMap::new();
+
+                for i in 0..(len * 8) {
+                    for j in (i + 1)..(len * 8) {
+                        for k in (j + 1)..(len * 8) {
+                            let mut data = vec![0u8; len];
+                            let idx = (i / 8) as usize;
+                            let pos = i % 8;
+                            data[idx] ^= 1 << pos;
+                            let idx = (j / 8) as usize;
+                            let pos = j % 8;
+                            data[idx] ^= 1 << pos;
+                            let idx = (k / 8) as usize;
+                            let pos = k % 8;
+                            data[idx] ^= 1 << pos;
+
+                            let value: u64 = Decoder::crc16_remainder(&data).0;
+
+                            // only try to add it, if the value is not allready corrected by 1 or 2 bit
+                            // error correction
+                            if None == map.get(&value) {
+                                if let Some(_) = map_3bit.get(&value) {
+                                    // throw out the value if it occurs multiple times (hamming
+                                    // distance too low)
+                                    map_3bit.remove(&value);
+                                    blacklist.push(value);
+                                } else {
+                                    // add the value if it is not in the blacklist (hamming distance
+                                    // too low)
+                                    if blacklist.iter().all(|&v| v != value) {
+                                        map_3bit.insert(value, data);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // extend the map with 3 bit error correction values
+                map.extend(map_3bit);
+            }
+
             maps.push(map)
         }
 
@@ -212,7 +259,7 @@ impl Decoder {
         let r09_type = data[0] & 0xf;
         let r09_length = data[1] & 0xf;
 
-        assert_eq!(r09_length as usize, 3 + data.len());
+        assert_eq!(3 + r09_length as usize, data.len());
 
         // decode R09.1x
         if r09_type == 1 && r09_length == 6 {
