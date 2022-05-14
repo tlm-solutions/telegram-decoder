@@ -1,4 +1,4 @@
-{ naersk, src, pkgs, lib, pkg-config }:
+{ naersk, src, pkgs, lib, pkg-config, stops }:
 
 naersk.buildPackage {
   pname = "telegram-decoder";
@@ -7,6 +7,11 @@ naersk.buildPackage {
   src = ./.;
 
   cargoSha256 = lib.fakeSha256;
+
+  patchPhase = ''
+    ls -alh
+    cp ${stops}/stops.json ./stops.json
+  '';
 
   nativeBuildInputs = with pkgs; [ pkg-config openssl];
   buildInputs = with pkgs; [ openssl ];
