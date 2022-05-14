@@ -123,15 +123,27 @@ impl fmt::Display for Telegram {
         let parsed: serde_json::Map<String, serde_json::Value> =
             serde_json::from_str(&FILE_STR).expect("JSON was not well-formatted");
         let junction_string = self.junction.to_string();
+        // TODO: get the region_id from a config
+        let region_id = "0";
         let junction = parsed
+            .get(region_id)
+            .unwrap()
+            .as_object()
+            .unwrap()
             .get(&junction_string)
             .map(|u| {
-                u.as_object()
+                let name = u
+                    .as_object()
                     .unwrap()
                     .get("name")
                     .unwrap()
                     .as_str()
-                    .unwrap()
+                    .unwrap();
+
+                match name {
+                    "" => &junction_string,
+                    _ => name,
+                }
             })
             .unwrap_or(&junction_string);
 
