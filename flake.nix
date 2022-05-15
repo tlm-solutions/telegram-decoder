@@ -4,12 +4,12 @@
 
     naersk = {
       url = "github:nix-community/naersk";
-      inputs.nixpkgs.follows = "nixpkgs";
+#      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     utils = {
       url = "github:numtide/flake-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
+#      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     stops = {
