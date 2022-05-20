@@ -22,6 +22,8 @@ fn main() {
     const BUFFER_SIZE: usize = 2048;
 
     let args = Args::parse();
+
+    println!("{:?}", &args);
     let stop_mapping = String::from(&args.config);
 
     let contents = read_to_string(stop_mapping).expect("Something went wrong reading the file");
@@ -34,7 +36,8 @@ fn main() {
     println!("Starting DVB Dump Telegram Decoder ... ");
     let addr = format!("{}:{}", &args.host, &args.port);
     let socket = UdpSocket::bind(addr).unwrap();
-    let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) = mpsc::sync_channel(400);
+    let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) =
+        mpsc::sync_channel(400);
 
     let _thread = thread::spawn(move || loop {
         let data = rx.recv().unwrap();
