@@ -16,9 +16,9 @@ use std::fs::read_to_string;
 use std::net::UdpSocket;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::thread;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     const BUFFER_SIZE: usize = 2048;
 
     let args = Args::parse();
@@ -31,7 +31,7 @@ fn main() {
     let station_config: Config =
         serde_json::from_str(&contents).expect("JSON was not well-formatted");
 
-    let decoder = Decoder::new(&station_config, &args.server);
+    let decoder = Decoder::new(&station_config, &args.server).await;
 
     println!("Starting DVB Dump Telegram Decoder ... ");
     let addr = format!("{}:{}", &args.host, &args.port);
@@ -39,10 +39,10 @@ fn main() {
     let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) =
         mpsc::sync_channel(400);
 
-    let _thread = thread::spawn(move || loop {
+    let _thread = tokio::spawn(async move { loop {
         let data = rx.recv().unwrap();
-        decoder.process(&data)
-    });
+        decoder.process(&data).await;
+    }});
     loop {
         let mut buffer = [0; BUFFER_SIZE];
         let (_amt, _src) = socket.recv_from(&mut buffer).unwrap();
