@@ -7,6 +7,8 @@ pub use structs::{Config, Telegram};
 use g2poly::G2Poly;
 use reqwest;
 use std::collections::HashMap;
+use std::time::Duration;
+
 
 pub struct Decoder {
     server: Vec<String>,
@@ -129,7 +131,10 @@ impl Decoder {
             println!("Telegram: {}", telegram);
             for server in &self.server {
                 let url = format!("{}/formatted_telegram", &server);
-                rt.block_on(client.post(&url).json(&telegram).send());
+                rt.block_on(client.post(&url)
+                            .timeout(Duration::new(2,0))
+                            .json(&telegram)
+                            .send()).unwrap();
             }
         }
     }
