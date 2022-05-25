@@ -1,4 +1,4 @@
-{ naersk, src, pkgs, lib, pkg-config, stops }:
+{ naersk, src, lib, pkg-config, openssl, stops }:
 
 naersk.buildPackage {
   pname = "telegram-decoder";
@@ -13,8 +13,8 @@ naersk.buildPackage {
     cp ${stops}/stops.json ./stops.json
   '';
 
-  nativeBuildInputs = with pkgs; [ pkg-config openssl];
-  buildInputs = with pkgs; [ openssl ];
+  nativeBuildInputs = [ pkg-config ];
+  buildInputs = [ openssl ];
 
   meta = with lib; {
     description = "Sever which receives raw data and turns it into telegrams";
