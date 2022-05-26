@@ -130,12 +130,16 @@ impl Decoder {
             println!("Telegram: {}", telegram);
             for server in &self.server {
                 let url = format!("{}/formatted_telegram", &server);
-                client.post(&url)
+                match client.post(&url)
                         .timeout(Duration::new(2,0))
                         .json(&telegram)
                         .send()
-                        .await
-                        .unwrap();
+                        .await {
+                    Err(_) => {
+                        println!("Connection Timeout! {}", &server);
+                    }
+                    _ => {}
+                }
             }
         }
     }
