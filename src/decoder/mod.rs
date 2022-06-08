@@ -8,12 +8,13 @@ use g2poly::G2Poly;
 use reqwest;
 use std::collections::HashMap;
 use std::time::Duration;
-
+use std::env;
 
 pub struct Decoder {
     server: Vec<String>,
     station_config: Config,
     maps: Vec<HashMap<u64, Vec<u8>>>,
+    token: Option<String>
 }
 
 impl Decoder {
@@ -110,10 +111,15 @@ impl Decoder {
             maps.push(map)
         }
 
+        let token = env::var("AUTHENTICATION_TOKEN_PATH").map(|token_path| {
+            String::from_utf8_lossy(&std::fs::read(token_path).unwrap()).parse().unwrap()
+        }).ok();
+
         Decoder {
             station_config: config.clone(),
             server: server.clone(),
             maps: maps,
+            token: token
         }
     }
 
@@ -126,7 +132,8 @@ impl Decoder {
         }
 
         let client = reqwest::Client::new();
-        for telegram in response{
+        for mut telegram in response{
+            telegram.auth_token = self.token.clone();
             println!("Telegram: {}", telegram);
             for server in &self.server {
                 let url = format!("{}/formatted_telegram", &server);

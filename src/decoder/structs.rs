@@ -10,6 +10,7 @@ pub struct BCD(pub u32);
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Telegram {
     pub time_stamp: u64,
+    pub auth_token: Option<String>,
     pub line: String,
     pub destination_number: String,
     pub priority: u32,
@@ -82,6 +83,7 @@ impl Telegram {
 
         Some(Telegram {
             time_stamp: since_the_epoch.as_secs(),
+            auth_token: None,
             sign_of_deviation: (byte_array[1] >> 7) as u32, //ZV Zeit Vorzeichen
             value_of_deviation: ((byte_array[1] >> 4) & 0x7) as u32, //ZW Zahlen Wert
             reporting_point: reporting_point,               //MP Melde punkt
