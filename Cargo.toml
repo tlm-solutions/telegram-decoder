@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 
-clap = { version = "3.1.8", features = ["derive"] }
+clap = { version = "3.1", features = ["derive"] }
 
 regex = "1"
 derive_builder = "*"
@@ -23,3 +23,4 @@ futures = "0.3" # for our async / await blocks
 tokio = { version = "1.15", features = ["full"] }
 
 hex-string = "*"
+uuid = { version = "*", features = [ "serde", "v4"]}

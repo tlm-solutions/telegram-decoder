@@ -9,12 +9,14 @@ use reqwest;
 use std::collections::HashMap;
 use std::time::Duration;
 use std::env;
+use uuid::Uuid;
 
 pub struct Decoder {
     server: Vec<String>,
     station_config: Config,
     maps: Vec<HashMap<u64, Vec<u8>>>,
-    token: Option<String>
+    token: Option<String>,
+    station_uuid: Option<Uuid>
 }
 
 impl Decoder {
@@ -114,12 +116,15 @@ impl Decoder {
         let token = env::var("AUTHENTICATION_TOKEN_PATH").map(|token_path| {
             String::from_utf8_lossy(&std::fs::read(token_path).unwrap()).parse().unwrap()
         }).ok();
+        
+        let station_uuid = env::var("STATION_UUID").map(|uuid| { Uuid::parse_str(&uuid).ok() }).ok().flatten();
 
         Decoder {
             station_config: config.clone(),
             server: server.clone(),
             maps: maps,
-            token: token
+            token: token,
+            station_uuid: station_uuid
         }
     }
 
@@ -133,10 +138,11 @@ impl Decoder {
 
         let client = reqwest::Client::new();
         for mut telegram in response{
-            telegram.auth_token = self.token.clone();
+            telegram.token = self.token.clone();
+            telegram.station_id = self.station_uuid.clone();
             println!("Telegram: {}", telegram);
             for server in &self.server {
-                let url = format!("{}/formatted_telegram", &server);
+                let url = format!("{}/telegram/r09/", &server);
                 match client.post(&url)
                         .timeout(Duration::new(2,0))
                         .json(&telegram)

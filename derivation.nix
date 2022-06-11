@@ -9,7 +9,6 @@ naersk.buildPackage {
   cargoSha256 = lib.fakeSha256;
 
   patchPhase = ''
-    ls -alh
     cp ${stops}/stops.json ./stops.json
   '';
 
