@@ -33,7 +33,7 @@ pub struct Config {
     pub name: String,
     pub lat: f64,
     pub lon: f64,
-    pub station_id: u32,
+    pub station_id: Uuid,
 }
 
 impl BCD {

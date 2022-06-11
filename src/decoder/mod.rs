@@ -16,7 +16,6 @@ pub struct Decoder {
     station_config: Config,
     maps: Vec<HashMap<u64, Vec<u8>>>,
     token: Option<String>,
-    station_uuid: Option<Uuid>
 }
 
 impl Decoder {
@@ -116,15 +115,12 @@ impl Decoder {
         let token = env::var("AUTHENTICATION_TOKEN_PATH").map(|token_path| {
             String::from_utf8_lossy(&std::fs::read(token_path).unwrap()).parse().unwrap()
         }).ok();
-        
-        let station_uuid = env::var("STATION_UUID").map(|uuid| { Uuid::parse_str(&uuid).ok() }).ok().flatten();
 
         Decoder {
             station_config: config.clone(),
             server: server.clone(),
             maps: maps,
-            token: token,
-            station_uuid: station_uuid
+            token: token
         }
     }
 
@@ -139,7 +135,7 @@ impl Decoder {
         let client = reqwest::Client::new();
         for mut telegram in response{
             telegram.token = self.token.clone();
-            telegram.station_id = self.station_uuid.clone();
+            telegram.station_id = Some(self.station_config.station_id);
             println!("Telegram: {}", telegram);
             for server in &self.server {
                 let url = format!("{}/telegram/r09/", &server);
