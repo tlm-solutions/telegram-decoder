@@ -112,9 +112,9 @@ impl Decoder {
             maps.push(map)
         }
 
-        let token = env::var("AUTHENTICATION_TOKEN_PATH").map(|token_path| {
-            String::from_utf8_lossy(&std::fs::read(token_path).unwrap()).parse().unwrap()
-        }).unwrap();
+        let token: String = env::var("AUTHENTICATION_TOKEN_PATH").map(|token_path| {
+            String::from_utf8_lossy(&std::fs::read(token_path).unwrap()).parse::<String>().unwrap()
+        }).unwrap().lines().next().unwrap().to_string();
 
         Decoder {
             station_config: config.clone(),
