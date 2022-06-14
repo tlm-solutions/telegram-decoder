@@ -136,9 +136,9 @@ impl Decoder {
         for mut telegram in response{
             telegram.token = self.token.clone();
             telegram.station_id = self.station_config.station_id;
-            println!("Telegram: {}", telegram);
+            println!("Telegram: {:?}", telegram);
             for server in &self.server {
-                let url = format!("{}/telegram/r09/", &server);
+                let url = format!("{}/telegram/r09", &server);
                 match client.post(&url)
                         .timeout(Duration::new(2,0))
                         .json(&telegram)
