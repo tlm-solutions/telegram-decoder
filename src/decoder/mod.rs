@@ -2,14 +2,15 @@ pub mod structs;
 #[cfg(test)]
 mod test;
 
-pub use structs::{Config, Telegram};
+pub use structs::{parse_r09_telegram, Config};
+
+use telegrams::{AuthenticationMeta, R09ReceiveTelegram, R09Telegram};
 
 use g2poly::G2Poly;
 use reqwest;
 use std::collections::HashMap;
-use std::time::Duration;
 use std::env;
-use uuid::Uuid;
+use std::time::Duration;
 
 pub struct Decoder {
     server: Vec<String>,
@@ -112,15 +113,23 @@ impl Decoder {
             maps.push(map)
         }
 
-        let token: String = env::var("AUTHENTICATION_TOKEN_PATH").map(|token_path| {
-            String::from_utf8_lossy(&std::fs::read(token_path).unwrap()).parse::<String>().unwrap()
-        }).unwrap().lines().next().unwrap().to_string();
+        let token: String = env::var("AUTHENTICATION_TOKEN_PATH")
+            .map(|token_path| {
+                String::from_utf8_lossy(&std::fs::read(token_path).unwrap())
+                    .parse::<String>()
+                    .unwrap()
+            })
+            .unwrap()
+            .lines()
+            .next()
+            .unwrap()
+            .to_string();
 
         Decoder {
             station_config: config.clone(),
             server: server.clone(),
             maps: maps,
-            token: token
+            token: token,
         }
     }
 
@@ -132,18 +141,25 @@ impl Decoder {
             return;
         }
 
+        let auth = AuthenticationMeta {
+            station: self.station_config.id.clone(),
+            token: self.token.clone(),
+        };
+
         let client = reqwest::Client::new();
-        for mut telegram in response{
-            telegram.token = self.token.clone();
-            telegram.station_id = self.station_config.station_id;
-            println!("Telegram: {:?}", telegram);
+        for telegram in response {
             for server in &self.server {
                 let url = format!("{}/telegram/r09", &server);
-                match client.post(&url)
-                        .timeout(Duration::new(2,0))
-                        .json(&telegram)
-                        .send()
-                        .await {
+                match client
+                    .post(&url)
+                    .timeout(Duration::new(2, 0))
+                    .json(&R09ReceiveTelegram {
+                        auth: auth.clone(),
+                        data: telegram.clone(),
+                    })
+                    .send()
+                    .await
+                {
                     Err(_) => {
                         println!("Connection Timeout! {}", &server);
                     }
@@ -153,7 +169,7 @@ impl Decoder {
         }
     }
 
-    pub async fn decode(&self, data: &[u8]) -> Vec<Telegram> {
+    pub async fn decode(&self, data: &[u8]) -> Vec<R09Telegram> {
         // minimum message size is 3 bytes + 2 bytes crc
         const MINIMUM_SIZE: usize = 5;
         // C09 fixed size of 4 bytes + variable length 4 bits (15 bytes) + 2 bytes CRC
@@ -169,7 +185,7 @@ impl Decoder {
             byte_array.push(Decoder::bit_to_bytes(&data[i * 9..(i + 1) * 9 - 1]).await);
         }
 
-        let mut collection: Vec<Telegram> = Vec::new();
+        let mut collection: Vec<R09Telegram> = Vec::new();
 
         // Abort if we don't have enough data for a packet
         if byte_array.len() < MINIMUM_SIZE {
@@ -202,7 +218,10 @@ impl Decoder {
                         repaired_telegram[i] ^= error[i];
                     }
 
-                    assert_eq!(Decoder::crc16_remainder(&repaired_telegram).await, G2Poly(0));
+                    assert_eq!(
+                        Decoder::crc16_remainder(&repaired_telegram).await,
+                        G2Poly(0)
+                    );
 
                     telegrams.push((&repaired_telegram[0..(telegram_length - 2)]).to_vec())
                 }
@@ -224,7 +243,7 @@ impl Decoder {
     // data is a vector of data without crc
     // TODO: change this into a vector. There is the possibilty for a valid R09 telegram being a
     // valid C09 telegram and vice versa.
-    async fn parse_telegram(data: &[u8]) -> Option<Telegram> {
+    async fn parse_telegram(data: &[u8]) -> Option<R09Telegram> {
         let mode: u8 = data[0] >> 4;
         let length: usize = data.len();
 
@@ -273,7 +292,7 @@ impl Decoder {
         return None;
     }
 
-    async fn parse_r09(data: &[u8]) -> Option<Telegram> {
+    async fn parse_r09(data: &[u8]) -> Option<R09Telegram> {
         // lower nibble of the mode
         let r09_type = data[0] & 0xf;
         let r09_length = data[1] & 0xf;
@@ -283,7 +302,7 @@ impl Decoder {
         // decode R09.1x
         if r09_type == 1 && r09_length == 6 {
             // TODO: if BCD is not BCD, throw it out
-            return Telegram::parse(data);
+            return parse_r09_telegram(data);
         } else {
             println!("[!] Recevied R09.{}.{}", r09_type, r09_length);
         }

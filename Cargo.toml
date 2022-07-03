@@ -1,12 +1,12 @@
 [package]
 name = "telegram-decode"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
+telegrams = { version = "0.1.6", git = "https://github.com/dump-dvb/telegrams" }
 clap = { version = "3.1", features = ["derive"] }
 
 regex = "1"
@@ -23,4 +23,4 @@ futures = "0.3" # for our async / await blocks
 tokio = { version = "1.15", features = ["full"] }
 
 hex-string = "*"
-uuid = { version = "*", features = [ "serde", "v4"]}
+uuid = { version = "=0.8.1", features = [ "serde", "v4"]}

@@ -39,10 +39,12 @@ async fn main() {
     let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) =
         mpsc::sync_channel(400);
 
-    let _thread = tokio::spawn(async move { loop {
-        let data = rx.recv().unwrap();
-        decoder.process(&data).await;
-    }});
+    let _thread = tokio::spawn(async move {
+        loop {
+            let data = rx.recv().unwrap();
+            decoder.process(&data).await;
+        }
+    });
     loop {
         let mut buffer = [0; BUFFER_SIZE];
         let (_amt, _src) = socket.recv_from(&mut buffer).unwrap();
