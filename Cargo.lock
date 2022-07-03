@@ -1387,7 +1387,7 @@ checksum = "20518fe4a4c9acf048008599e464deb21beeae3d3578418951a189c235a7a9a8"
 
 [[package]]
 name = "telegram-decode"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "derive_builder",
@@ -1406,8 +1406,8 @@ dependencies = [
 
 [[package]]
 name = "telegrams"
-version = "0.1.6"
-source = "git+https://github.com/dump-dvb/telegrams#91393887be030b696827c2f7dda841d1e7cc76db"
+version = "0.1.7"
+source = "git+https://github.com/dump-dvb/telegrams#0fc3b4218fa7906dbc6f43298f44bb16f2e7bead"
 dependencies = [
  "chrono",
  "diesel",

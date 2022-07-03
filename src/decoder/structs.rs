@@ -10,13 +10,10 @@ pub struct BCD(pub u32);
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Config {
     pub id: Uuid,
-    pub token: String,
     pub name: String,
     pub lat: f64,
     pub lon: f64,
     pub region: i32,
-    //pub owner: Uuid,
-    //pub approved: bool,
 }
 
 impl BCD {
