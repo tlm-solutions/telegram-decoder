@@ -20,12 +20,9 @@ use std::sync::mpsc::{Receiver, SyncSender};
 #[tokio::main]
 async fn main() {
     const BUFFER_SIZE: usize = 2048;
-
     let args = Args::parse();
 
-    println!("{:?}", &args);
     let stop_mapping = String::from(&args.config);
-
     let contents = read_to_string(stop_mapping).expect("Something went wrong reading the file");
 
     let station_config: Config =
