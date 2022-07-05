@@ -48,5 +48,5 @@
             }
           ) hydraJobs (builtins.attrNames self.packages.${system})
         ) {} hydraSystems; 
-      };
+    };
 }

@@ -13,7 +13,7 @@ pub struct Config {
     pub name: String,
     pub lat: f64,
     pub lon: f64,
-    pub region: i32,
+    pub region: u64,
 }
 
 impl BCD {
