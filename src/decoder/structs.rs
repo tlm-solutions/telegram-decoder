@@ -1,20 +1,11 @@
 extern crate derive_builder;
 
 pub use telegrams::R09Telegram;
-
-use uuid::Uuid;
+pub use stop_names::R09Types;
 
 #[derive(Debug)]
 pub struct BCD(pub u32);
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Config {
-    pub id: Uuid,
-    pub name: String,
-    pub lat: f64,
-    pub lon: f64,
-    pub region: u64,
-}
 
 impl BCD {
     pub fn parse(bytes: &[u8]) -> Option<BCD> {
@@ -58,7 +49,7 @@ pub fn parse_r09_telegram(byte_array: &[u8]) -> Option<R09Telegram> {
     let value_of_deviation = ((byte_array[1] >> 4) & 0x7) as i32; //ZW Zahlen Wert
 
     Some(R09Telegram {
-        telegram_type: 16,
+        telegram_type: R09Types::R16,
         delay: Some((sign_of_deviation * -2 + 1) * value_of_deviation),
         reporting_point: reporting_point, //MP Melde punkt
         junction: (reporting_point >> 2) / 10,

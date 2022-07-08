@@ -2,9 +2,14 @@ pub mod structs;
 #[cfg(test)]
 mod test;
 
-pub use structs::{parse_r09_telegram, Config};
+pub use structs::{parse_r09_telegram};
 
-use telegrams::{AuthenticationMeta, R09ReceiveTelegram, R09Telegram};
+use telegrams::{
+    AuthenticationMeta, 
+    R09ReceiveTelegram, 
+    R09Telegram,
+    RadioStation
+};
 
 use g2poly::G2Poly;
 use reqwest;
@@ -14,13 +19,13 @@ use std::time::Duration;
 
 pub struct Decoder {
     server: Vec<String>,
-    station_config: Config,
+    station_config: RadioStation,
     maps: Vec<HashMap<u64, Vec<u8>>>,
     token: String,
 }
 
 impl Decoder {
-    pub async fn new(config: &Config, server: &Vec<String>) -> Decoder {
+    pub async fn new(config: &RadioStation, server: &Vec<String>) -> Decoder {
         let mut maps: Vec<HashMap<u64, Vec<u8>>> = Vec::new();
 
         for len in 5..22 {

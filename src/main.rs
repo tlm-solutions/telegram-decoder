@@ -1,15 +1,16 @@
-#[macro_use]
 extern crate serde_derive;
 
 mod decoder;
 mod structs;
 
 // modules
-use decoder::{Config, Decoder};
+use decoder::Decoder;
 use structs::Args;
 
 // extern creates
 use clap::Parser;
+
+use telegrams::RadioStation;
 
 // standard lib
 use std::fs::read_to_string;
@@ -25,7 +26,7 @@ async fn main() {
     let stop_mapping = String::from(&args.config);
     let contents = read_to_string(stop_mapping).expect("Something went wrong reading the file");
 
-    let station_config: Config =
+    let station_config: RadioStation =
         serde_json::from_str(&contents).expect("JSON was not well-formatted");
 
     let decoder = Decoder::new(&station_config, &args.server).await;

@@ -6,7 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-telegrams = { version = "0.1.7", git = "https://github.com/dump-dvb/telegrams" }
+telegrams = { version = "0.3", git = "https://github.com/dump-dvb/telegrams" }
+stop-names = { versipn = "0.3", git = "https://github.com/dump-dvb/stop-names" }
+
 clap = { version = "3.2", features = ["derive"] }
 
 regex = "1.5"

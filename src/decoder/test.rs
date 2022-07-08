@@ -1,5 +1,9 @@
 //mod decoder;
-use crate::decoder::{Config, Decoder, Telegram};
+use crate::decoder::Decoder;
+use telegrams::{R09Telegram, RadioStation};
+use stop_names::R09Types;
+use serde::{Deserialize};
+use uuid::Uuid;
 
 extern crate derive_builder;
 
@@ -27,16 +31,7 @@ struct ValidR09_16Telegram {
 }
 
 macro_rules! decode_telegrams_from_file {
-    ($file: expr ) => {{
-        let config = Config {
-            name: "TEST".to_string(),
-            lat: 0.,
-            lon: 0.,
-            station_id: 0,
-        };
-
-        let server = vec!["mockup".to_string()];
-        let decoder = Decoder::new(&config, &server);
+    ($file: expr, $decoder: expr ) => {{
         const FILE_STR: &'static str = include_str!($file);
         let parsed: Vec<ValidR09_16Telegram> =
             serde_json::from_str(&FILE_STR).expect("JSON was not well-formatted");
@@ -44,9 +39,24 @@ macro_rules! decode_telegrams_from_file {
         for (i, item) in parsed.iter().enumerate() {
             let telegram = &item.output;
 
-            let expected_telegram = Telegram {
-                time_stamp: 0,
-                line: format!("{:0>3}", telegram.ln.to_string()),
+            let expected_telegram = R09Telegram {
+                telegram_type: R09Types::R16,
+                delay: Some((2i32 - telegram.zv as i32) * (telegram.zw as i32)),
+                reporting_point: telegram.mp,
+                junction: telegram.junction,
+                direction: telegram.ha as u8,
+                request_status: telegram.request_status as u8,
+                priority: Some(telegram.pr as u8),
+                direction_request: Some(telegram.junction_number as u8),
+                line: Some(telegram.ln),
+                run_number: Some(telegram.kn),
+                destination_number: Some(telegram.zn),
+                train_length: Some(telegram.zl as u8),
+                vehicle_number: None,
+                operator: None
+
+                /*time_stamp: 0,
+                line: format!("{:0>3}", telegram.await.ln.to_string()),
                 destination_number: format!("{:0>3}", telegram.zn.to_string()),
                 priority: telegram.pr,
                 sign_of_deviation: telegram.zv,
@@ -58,7 +68,7 @@ macro_rules! decode_telegrams_from_file {
                 train_length: telegram.zl,
                 junction: telegram.junction,
                 junction_number: telegram.junction_number,
-                request_status: telegram.request_status,
+                request_status: telegram.request_status, */
             };
 
             let received_telegram = decoder.decode(&item.input.as_ref());
@@ -73,10 +83,30 @@ macro_rules! decode_telegrams_from_file {
 
 #[test]
 fn test_decode_valid_r09_16_telegrams() {
-    decode_telegrams_from_file!("../../data/valid_r09_16_telegrams.json");
+    let config = RadioStation {
+        id: Uuid::new_v4(),
+        name: "test".to_string(),
+        lat: 0.0,
+        lon: 0.0,
+        region: "dvb".to_string(),
+    };
+    let server = vec!["mockup".to_string()];
+
+    let decoder = Decoder::new(&config, &server).await;
+    decode_telegrams_from_file!("../../data/valid_r09_16_telegrams.json", decoder);
 }
 
 #[test]
 fn test_decode_1bit_error_r09_16_telegrams() {
-    decode_telegrams_from_file!("../../data/1bit_error_r09_16_telegrams.json");
+    let config = RadioStation {
+        id: Uuid::new_v4(),
+        name: "test".to_string(),
+        lat: 0.0,
+        lon: 0.0,
+        region: "dvb".to_string(),
+    };
+    let server = vec!["mockup".to_string()];
+
+    let decoder = Decoder::new(&config, &server).await;
+    decode_telegrams_from_file!("../../data/1bit_error_r09_16_telegrams.json", decoder);
 }
