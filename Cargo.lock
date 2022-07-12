@@ -167,9 +167,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.2.8"
+version = "3.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "190814073e85d238f31ff738fcb0bf6910cedeb73376c87cd69291028966fd83"
+checksum = "69c5a7f9997be616e47f0577ee38c91decb33392c5be4866494f34cdf329a9aa"
 dependencies = [
  "atty",
  "bitflags",
@@ -977,9 +977,9 @@ dependencies = [
 
 [[package]]
 name = "prettyplease"
-version = "0.1.15"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e1516508b396cefe095485fdce673007422f5e48e82934b7b423dc26aa5e6a4"
+checksum = "da6ffbe862780245013cb1c0a48c4e44b7d665548088f91f6b90876d0625e4c2"
 dependencies = [
  "proc-macro2",
  "syn",
@@ -1292,18 +1292,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.138"
+version = "1.0.139"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1578c6245786b9d168c5447eeacfb96856573ca56c9d68fdcf394be134882a47"
+checksum = "0171ebb889e45aa68b44aee0859b3eede84c6f5f5c228e6f140c0b2a0a46cad6"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.138"
+version = "1.0.139"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "023e9b1467aef8a10fb88f25611870ada9800ef7e22afce356bb0d2387b6f27c"
+checksum = "dc1d3230c1de7932af58ad8ffbe1d784bd55efd5a9d84ac24f69c72d83543dfb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1366,8 +1366,8 @@ dependencies = [
 
 [[package]]
 name = "stop-names"
-version = "0.4.0"
-source = "git+https://github.com/dump-dvb/stop-names#373f443980a4bbefb7a8eb8eb358e0ed7a88856b"
+version = "0.5.0"
+source = "git+https://github.com/dump-dvb/stop-names#f9d3b2b83325e719bd899847cc8b7944a70b8765"
 dependencies = [
  "chrono",
  "serde",
@@ -1419,8 +1419,8 @@ dependencies = [
 
 [[package]]
 name = "telegrams"
-version = "0.4.1"
-source = "git+https://github.com/dump-dvb/telegrams#8c3d50a7ae7648cbe7c7e28fd2a077693d697df0"
+version = "0.4.2"
+source = "git+https://github.com/dump-dvb/telegrams#779c094657ef3e9f20d2a80bf16883c82010eebd"
 dependencies = [
  "chrono",
  "diesel",

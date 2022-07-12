@@ -235,6 +235,7 @@ impl Decoder {
             for telegram in telegrams {
                 match Decoder::parse_telegram(&telegram).await {
                     Some(telegram) => {
+                        println!("Decoder R09 Telegram: {:?}", telegram);
                         collection.push(telegram);
                     }
                     None => {}

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 telegrams = { version = "0.4", git = "https://github.com/dump-dvb/telegrams" }
-stop-names = { versipn = "0.4", git = "https://github.com/dump-dvb/stop-names" }
+stop-names = { versipn = "0.5", git = "https://github.com/dump-dvb/stop-names" }
 
 clap = { version = "3.2", features = ["derive"] }
 

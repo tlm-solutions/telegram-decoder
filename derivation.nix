@@ -8,10 +8,6 @@ naersk.buildPackage {
 
   cargoSha256 = lib.fakeSha256;
 
-  patchPhase = ''
-    cp ${stops}/stops.json ./stops.json
-  '';
-
   nativeBuildInputs = [ pkg-config ];
   buildInputs = [ openssl cmake postgresql ];
 
