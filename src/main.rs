@@ -10,7 +10,7 @@ use structs::Args;
 // extern creates
 use clap::Parser;
 
-use telegrams::RadioStation;
+use dump_dvb::receivers::RadioReceiver;
 
 // standard lib
 use std::fs::read_to_string;
@@ -26,7 +26,7 @@ async fn main() {
     let stop_mapping = String::from(&args.config);
     let contents = read_to_string(stop_mapping).expect("Something went wrong reading the file");
 
-    let station_config: RadioStation =
+    let station_config: RadioReceiver =
         serde_json::from_str(&contents).expect("JSON was not well-formatted");
 
     let decoder = Decoder::new(&station_config, &args.server).await;

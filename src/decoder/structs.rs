@@ -1,7 +1,9 @@
 extern crate derive_builder;
 
-pub use telegrams::R09Telegram;
-pub use stop_names::R09Types;
+pub use dump_dvb::{
+    telegrams::r09::R09Telegram,
+    stations::R09Types
+};
 
 #[derive(Debug)]
 pub struct BCD(pub u32);
