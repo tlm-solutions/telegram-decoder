@@ -19,4 +19,8 @@ pub struct Args {
 
     #[clap(short, long, default_value_t = String::from("config.json"))]
     pub config: String,
+
+    #[clap(short, long, action)]
+    pub offline: bool
+
 }

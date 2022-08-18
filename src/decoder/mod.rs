@@ -29,7 +29,7 @@ pub struct Decoder {
 }
 
 impl Decoder {
-    pub async fn new(config: &RadioReceiver, server: &Vec<String>) -> Decoder {
+    pub async fn new(config: &RadioReceiver, server: &Vec<String>, offline: bool) -> Decoder {
         let mut maps: Vec<HashMap<u64, Vec<u8>>> = Vec::new();
 
         for len in 5..22 {
@@ -122,22 +122,23 @@ impl Decoder {
             maps.push(map)
         }
 
-        let token: String = env::var("AUTHENTICATION_TOKEN_PATH")
-            .map(|token_path| {
-                if token_path == "" {
-                    String::from("")
-                } else {
+        let token: String;
+        if offline {
+            token = String::from("");
+        } else {
+            token = env::var("AUTHENTICATION_TOKEN_PATH")
+                .map(|token_path| {
                     String::from_utf8_lossy(&std::fs::read(token_path).unwrap())
                         .parse::<String>()
                         .unwrap()
+                })
+                .unwrap()
+                .lines()
+                .next()
+                .unwrap()
+                .to_string();
 
-                }
-            })
-            .unwrap()
-            .lines()
-            .next()
-            .unwrap()
-            .to_string();
+        }
 
         Decoder {
             station_config: config.clone(),
