@@ -124,9 +124,14 @@ impl Decoder {
 
         let token: String = env::var("AUTHENTICATION_TOKEN_PATH")
             .map(|token_path| {
-                String::from_utf8_lossy(&std::fs::read(token_path).unwrap())
-                    .parse::<String>()
-                    .unwrap()
+                if token_path == "" {
+                    String::from("")
+                } else {
+                    String::from_utf8_lossy(&std::fs::read(token_path).unwrap())
+                        .parse::<String>()
+                        .unwrap()
+
+                }
             })
             .unwrap()
             .lines()
