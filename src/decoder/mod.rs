@@ -30,7 +30,7 @@ use std::collections::VecDeque;
 
 struct RepairedTelegram {
     data: Vec<u8>,
-    number_of_bits_repaired: usize
+    number_of_bits_repaired: u32 
 }
 
 pub struct Decoder {
@@ -178,6 +178,8 @@ impl Decoder {
         };
 
         let client = reqwest::Client::new();
+        println!("Sending: R09: {} RAW: {}", self.r09_queue.len(), self.raw_queue.len());
+
         for telegram in &self.r09_queue {
             for server in &self.server {
                 let url = format!("{}/telegram/r09", &server);
@@ -265,7 +267,7 @@ impl Decoder {
                 telegrams.push(
                     RepairedTelegram {
                         data: (&telegram_array[0..(telegram_length - 2)]).to_vec(), 
-                        number_of_bits_repaired: 0usize
+                        number_of_bits_repaired: 0u32
                     }
                 );
             } else {
@@ -285,7 +287,7 @@ impl Decoder {
 
                     telegrams.push(RepairedTelegram {
                         data: (&repaired_telegram[0..(telegram_length - 2)]).to_vec(),
-                        number_of_bits_repaired: error.iter().filter(|&x| *x == 1).count()
+                        number_of_bits_repaired: error.iter().map(|x| x.count_ones()).sum()
                     });
                 }
             }
@@ -344,6 +346,7 @@ impl Decoder {
             return;
         } else {
             if repair_telegram.number_of_bits_repaired > 0 {
+                println!("Telegram has errors! {}", repair_telegram.number_of_bits_repaired);
                 return;
             }
 
