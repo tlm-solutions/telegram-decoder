@@ -55,10 +55,10 @@ pub fn parse_r09_telegram(byte_array: &[u8]) -> Option<R09Telegram> {
         delay: Some((sign_of_deviation * -2 + 1) * value_of_deviation),
         reporting_point: reporting_point, //MP Melde punkt
         junction: (reporting_point >> 2) / 10,
-        direction: ((byte_array[4] >> 4) & 0x3) as u8, // HA Anforderung Richtung
+        direction: (reporting_point >> 2) % 10,
         request_status: (reporting_point & 0x3) as u8,
         priority: Some((byte_array[4] >> 6) as u8), //PR Prioritet
-        direction_request: None,
+        direction_request: ((byte_array[4] >> 4) & 0x3) as u8, // HA Anforderung Richtung
         line: Some(line),                        // LN Line Nummer
         run_number: Some(run),                   // KN Kurse Nummer
         destination_number: Some(destination),   // ZN Zielnummer
