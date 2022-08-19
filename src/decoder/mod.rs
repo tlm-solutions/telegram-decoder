@@ -343,7 +343,7 @@ impl Decoder {
 
             return;
         } else {
-            if repair_telegram.number_of_bits_repaired > 2 {
+            if repair_telegram.number_of_bits_repaired > 0 {
                 return;
             }
 
