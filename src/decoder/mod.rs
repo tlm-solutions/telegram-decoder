@@ -8,24 +8,38 @@ use dump_dvb::{
     receivers::RadioReceiver,
     telegrams::{
         AuthenticationMeta, 
+        TelegramType,
         r09::{
             R09ReceiveTelegram, 
             R09Telegram,
         },
+        raw::{
+            RawReceiveTelegram,
+            RawTelegram,
+        }
     },
 };
 
 use g2poly::G2Poly;
+use num_traits::cast::FromPrimitive;
 use reqwest;
 use std::collections::HashMap;
 use std::env;
 use std::time::Duration;
+use std::collections::VecDeque;
+
+struct RepairedTelegram {
+    data: Vec<u8>,
+    number_of_bits_repaired: usize
+}
 
 pub struct Decoder {
     server: Vec<String>,
     station_config: RadioReceiver,
     maps: Vec<HashMap<u64, Vec<u8>>>,
     token: String,
+    r09_queue: VecDeque<R09Telegram>,
+    raw_queue: VecDeque<RawTelegram>
 }
 
 impl Decoder {
@@ -145,16 +159,18 @@ impl Decoder {
             server: server.clone(),
             maps: maps,
             token: token,
+            r09_queue: VecDeque::new(),
+            raw_queue: VecDeque::new()
         }
     }
 
-    pub async fn process(&self, data: &[u8]) {
+    pub async fn process(&mut self, data: &[u8]) {
         let data_copy = data.clone();
 
-        let response = self.decode(data_copy).await;
-        if response.len() == 0 {
-            return;
-        }
+        self.decode(data_copy).await;
+        //if response.len() == 0 {
+        //    return;
+        //}
 
         let auth = AuthenticationMeta {
             station: self.station_config.id.clone(),
@@ -162,7 +178,7 @@ impl Decoder {
         };
 
         let client = reqwest::Client::new();
-        for telegram in response {
+        for telegram in &self.r09_queue {
             for server in &self.server {
                 let url = format!("{}/telegram/r09", &server);
                 match client
@@ -182,9 +198,33 @@ impl Decoder {
                 }
             }
         }
+        self.r09_queue.clear();
+
+        for telegram in &self.raw_queue {
+            for server in &self.server {
+                let url = format!("{}/telegram/raw", &server);
+                match client
+                    .post(&url)
+                    .timeout(Duration::new(2, 0))
+                    .json(&RawReceiveTelegram {
+                        auth: auth.clone(),
+                        data: telegram.clone(),
+                    })
+                    .send()
+                    .await
+                {
+                    Err(_) => {
+                        println!("Connection Timeout! {}", &server);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        self.raw_queue.clear();
     }
 
-    pub async fn decode(&self, data: &[u8]) -> Vec<R09Telegram> {
+    pub async fn decode(&mut self, data: &[u8]) {
         // minimum message size is 3 bytes + 2 bytes crc
         const MINIMUM_SIZE: usize = 5;
         // C09 fixed size of 4 bytes + variable length 4 bits (15 bytes) + 2 bytes CRC
@@ -200,11 +240,11 @@ impl Decoder {
             byte_array.push(Decoder::bit_to_bytes(&data[i * 9..(i + 1) * 9 - 1]).await);
         }
 
-        let mut collection: Vec<R09Telegram> = Vec::new();
+        //let mut collection: Vec<Box<dyn AbstractTelegram>> = Vec::new();
 
         // Abort if we don't have enough data for a packet
         if byte_array.len() < MINIMUM_SIZE {
-            return collection;
+            return;
         }
 
         // try decoding for every possible length
@@ -218,11 +258,16 @@ impl Decoder {
 
             let rem = Decoder::crc16_remainder(&telegram_array).await;
 
-            let mut telegrams: Vec<Vec<u8>> = Vec::new();
+            let mut telegrams: Vec<RepairedTelegram> = Vec::new();
 
             if rem == G2Poly(0) {
                 // no errors, decode
-                telegrams.push((&telegram_array[0..(telegram_length - 2)]).to_vec())
+                telegrams.push(
+                    RepairedTelegram {
+                        data: (&telegram_array[0..(telegram_length - 2)]).to_vec(), 
+                        number_of_bits_repaired: 0usize
+                    }
+                );
             } else {
                 // errors. try to fix them
                 if let Some(error) = self.maps[telegram_length - MINIMUM_SIZE].get(&rem.0) {
@@ -238,61 +283,76 @@ impl Decoder {
                         G2Poly(0)
                     );
 
-                    telegrams.push((&repaired_telegram[0..(telegram_length - 2)]).to_vec())
+                    telegrams.push(RepairedTelegram {
+                        data: (&repaired_telegram[0..(telegram_length - 2)]).to_vec(),
+                        number_of_bits_repaired: error.iter().filter(|&x| *x == 1).count()
+                    });
                 }
             }
 
             for telegram in telegrams {
-                match Decoder::parse_telegram(&telegram).await {
+                self.parse_telegram(&telegram).await 
+
+                /*{
                     Some(telegram) => {
-                        println!("Decoder R09 Telegram: {:?}", telegram);
-                        collection.push(telegram);
+                        //println!("Decoder R09 Telegram: {:?}", telegram);
+                        //collection.push(telegram);
                     }
                     None => {}
-                };
+                };*/
             }
         }
 
-        return collection;
     }
 
     // data is a vector of data without crc
     // TODO: change this into a vector. There is the possibilty for a valid R09 telegram being a
     // valid C09 telegram and vice versa.
-    async fn parse_telegram(data: &[u8]) -> Option<R09Telegram> {
-        let mode: u8 = data[0] >> 4;
-        let length: usize = data.len();
+    async fn parse_telegram(&mut self, repair_telegram: &RepairedTelegram) {
+        let mode: u8 = repair_telegram.data[0] >> 4;
+        let length: usize = repair_telegram.data.len();
 
         // length has to be at least 3 bytes
         if length < 3 {
-            return None;
+            return;
         }
 
         // these modes may only have length 3 (R telegrams) or 4 (C telegrams)
         // lower bound is already checked above
         if mode <= 4 || mode >= 10 {
             if length > 4 {
-                return None;
+                return;
             }
         }
 
         if mode == 9 {
             // parse R09.x
-            if 3 + (data[1] & 0xf) as usize == length {
-                return Decoder::parse_r09(&data).await;
+            if 3 + (repair_telegram.data[1] & 0xf) as usize == length {
+                return self.parse_r09(&repair_telegram.data).await;
             }
             // parse C09.x
-            if 4 + (data[2] & 0xf) as usize == length {
-                let c09_type = data[2] >> 4;
-                let c09_length = data[2] & 0xf;
+            if 4 + (repair_telegram.data[2] & 0xf) as usize == length {
+                let c09_type = repair_telegram.data[2] >> 4;
+                let c09_length = repair_telegram.data[2] & 0xf;
 
                 // TODO
                 println!("[!] Recevied C09.{}.{}", c09_type, c09_length);
 
-                return None;
+                return;
             }
 
-            return None;
+            return;
+        } else {
+            if repair_telegram.number_of_bits_repaired > 2 {
+                return;
+            }
+
+            let telegram_type = TelegramType::from_u8(mode).unwrap();
+
+            self.raw_queue.push_back(RawTelegram {
+                telegram_type: telegram_type,
+                data: repair_telegram.data.clone()
+            })
         }
 
         // We removed the one variable length telegrams of the R-series R09, others are 3 bytes
@@ -304,11 +364,9 @@ impl Decoder {
             3 => println!("[!] Received R {}", mode),
             _ => println!("[!] Received C {}", mode),
         };
-
-        return None;
     }
 
-    async fn parse_r09(data: &[u8]) -> Option<R09Telegram> {
+    async fn parse_r09(&mut self, data: &[u8]) {
         // lower nibble of the mode
         let r09_type = data[0] & 0xf;
         let r09_length = data[1] & 0xf;
@@ -318,12 +376,15 @@ impl Decoder {
         // decode R09.1x
         if r09_type == 1 && r09_length == 6 {
             // TODO: if BCD is not BCD, throw it out
-            return parse_r09_telegram(data);
+            match parse_r09_telegram(data) {
+                Some(data) => {
+                    self.r09_queue.push_back(data);
+                }
+                None => {}
+            }
         } else {
             println!("[!] Recevied R09.{}.{}", r09_type, r09_length);
         }
-
-        return None;
     }
 
     // converts a list of bits into a single byte

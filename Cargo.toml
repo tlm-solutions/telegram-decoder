@@ -24,3 +24,4 @@ tokio = { version = "1.15", features = ["full"] }
 
 hex-string = "*"
 uuid = { version = "=0.8.1", features = [ "serde", "v4"]}
+num-traits = "*"

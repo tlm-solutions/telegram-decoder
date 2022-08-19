@@ -29,7 +29,7 @@ async fn main() {
     let station_config: RadioReceiver =
         serde_json::from_str(&contents).expect("JSON was not well-formatted");
 
-    let decoder = Decoder::new(&station_config, &args.server, args.offline).await;
+    let mut decoder = Decoder::new(&station_config, &args.server, args.offline).await;
 
     println!("Starting DVB Dump Telegram Decoder ... ");
     let addr = format!("{}:{}", &args.host, &args.port);
