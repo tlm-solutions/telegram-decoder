@@ -4,6 +4,7 @@
 
     naersk = {
       url = "github:nix-community/naersk";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     utils = {
