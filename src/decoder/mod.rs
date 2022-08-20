@@ -23,6 +23,8 @@ use dump_dvb::{
 use g2poly::G2Poly;
 use num_traits::cast::FromPrimitive;
 use reqwest;
+use log::{info, warn};
+
 use std::collections::HashMap;
 use std::env;
 use std::time::Duration;
@@ -178,7 +180,6 @@ impl Decoder {
         };
 
         let client = reqwest::Client::new();
-        println!("Sending: R09: {} RAW: {}", self.r09_queue.len(), self.raw_queue.len());
 
         for telegram in &self.r09_queue {
             for server in &self.server {
@@ -194,7 +195,7 @@ impl Decoder {
                     .await
                 {
                     Err(_) => {
-                        println!("Connection Timeout! {}", &server);
+                        warn!("Connection Timeout! {}", &server);
                     }
                     _ => {}
                 }
@@ -216,7 +217,7 @@ impl Decoder {
                     .await
                 {
                     Err(_) => {
-                        println!("Connection Timeout! {}", &server);
+                        warn!("Connection Timeout! {}", &server);
                     }
                     _ => {}
                 }
@@ -294,14 +295,6 @@ impl Decoder {
 
             for telegram in telegrams {
                 self.parse_telegram(&telegram).await 
-
-                /*{
-                    Some(telegram) => {
-                        //println!("Decoder R09 Telegram: {:?}", telegram);
-                        //collection.push(telegram);
-                    }
-                    None => {}
-                };*/
             }
         }
 
@@ -338,7 +331,7 @@ impl Decoder {
                 let c09_length = repair_telegram.data[2] & 0xf;
 
                 // TODO
-                println!("[!] Recevied C09.{}.{}", c09_type, c09_length);
+                info!("[!] Recevied C09.{}.{}", c09_type, c09_length);
 
                 return;
             }
@@ -346,16 +339,17 @@ impl Decoder {
             return;
         } else {
             if repair_telegram.number_of_bits_repaired > 0 {
-                println!("Telegram has errors! {}", repair_telegram.number_of_bits_repaired);
                 return;
             }
-
             let telegram_type = TelegramType::from_u8(mode).unwrap();
 
-            self.raw_queue.push_back(RawTelegram {
+            let raw_telegram = RawTelegram {
                 telegram_type: telegram_type,
                 data: repair_telegram.data.clone()
-            })
+            };
+
+            info!("Detected RawTelegram: {:?}", &raw_telegram);
+            self.raw_queue.push_back(raw_telegram)
         }
 
         // We removed the one variable length telegrams of the R-series R09, others are 3 bytes
@@ -364,8 +358,8 @@ impl Decoder {
         // They are probably only 4 bytes long, like other ones from the C-series, but we don't
         // know.
         match length {
-            3 => println!("[!] Received R {}", mode),
-            _ => println!("[!] Received C {}", mode),
+            3 => info!("[!] Received R {}", mode),
+            _ => info!("[!] Received C {}", mode),
         };
     }
 
@@ -386,7 +380,7 @@ impl Decoder {
                 None => {}
             }
         } else {
-            println!("[!] Recevied R09.{}.{}", r09_type, r09_length);
+            info!("[!] Recevied R09.{}.{}", r09_type, r09_length);
         }
     }
 
