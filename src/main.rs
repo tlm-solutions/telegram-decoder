@@ -7,10 +7,12 @@ mod structs;
 use decoder::Decoder;
 use structs::Args;
 
+// dump-dvb crate
+use dump_dvb::receivers::RadioReceiver;
+
 // extern creates
 use clap::Parser;
-
-use dump_dvb::receivers::RadioReceiver;
+use env_logger;
 
 // standard lib
 use std::fs::read_to_string;
@@ -22,6 +24,10 @@ use std::sync::mpsc::{Receiver, SyncSender};
 async fn main() {
     const BUFFER_SIZE: usize = 2048;
     let args = Args::parse();
+
+    let log_level = if args.verbose { "info" } else { "warning" };
+    std::env::set_var("RUST_LOG", format!("actix_web={}", log_level));
+    env_logger::init();
 
     let stop_mapping = String::from(&args.config);
     let contents = read_to_string(stop_mapping).expect("Something went wrong reading the file");

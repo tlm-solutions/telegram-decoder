@@ -348,7 +348,7 @@ impl Decoder {
                 data: repair_telegram.data.clone()
             };
 
-            info!("Detected RawTelegram: {:?}", &raw_telegram);
+            info!("Detected RawTelegram: {:?}", raw_telegram);
             self.raw_queue.push_back(raw_telegram)
         }
 
