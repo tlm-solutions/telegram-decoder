@@ -1,5 +1,5 @@
 [package]
-name = "telegram-decode"
+name = "telegram-decoder"
 version = "0.2.0"
 edition = "2021"
 
@@ -10,7 +10,6 @@ dump-dvb = { version = "~0.1", git = "https://github.com/dump-dvb/dump-dvb.rs" }
 
 clap = { version = "3.2", features = ["derive"] }
 
-regex = "1.5"
 derive_builder = "0.11"
 serde = "1.0"
 
@@ -19,11 +18,9 @@ serde_derive = "1.0"
 g2poly = "0.4"
 
 reqwest = { version = "0.11", features = ["json"] } # reqwest with JSON parsing support
-futures = "0.3" # for our async / await blocks
 tokio = { version = "1.15", features = ["full"] }
 
-hex-string = "*"
-uuid = { version = "=0.8.1", features = [ "serde", "v4"]}
 num-traits = "*"
+uuid = { version = "=0.8.1", features = [ "serde", "v4"]}
 log = "0.4"
 env_logger = "*"

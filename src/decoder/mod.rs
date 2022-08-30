@@ -21,9 +21,9 @@ use dump_dvb::{
 };
 
 use g2poly::G2Poly;
-use num_traits::cast::FromPrimitive;
 use reqwest;
 use log::{info, warn};
+use num_traits::cast::FromPrimitive;
 
 use std::collections::HashMap;
 use std::env;

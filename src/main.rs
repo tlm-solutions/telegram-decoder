@@ -13,6 +13,7 @@ use dump_dvb::receivers::RadioReceiver;
 // extern creates
 use clap::Parser;
 use env_logger;
+use log::info;
 
 // standard lib
 use std::fs::read_to_string;
@@ -26,7 +27,7 @@ async fn main() {
     let args = Args::parse();
 
     let log_level = if args.verbose { "info" } else { "warning" };
-    std::env::set_var("RUST_LOG", format!("actix_web={}", log_level));
+    std::env::set_var("RUST_LOG", format!("telegram-decoder={}", log_level));
     env_logger::init();
 
     let stop_mapping = String::from(&args.config);
@@ -37,7 +38,7 @@ async fn main() {
 
     let mut decoder = Decoder::new(&station_config, &args.server, args.offline).await;
 
-    println!("Starting DVB Dump Telegram Decoder ... ");
+    info!("Starting DVB Dump Telegram Decoder ... ");
     let addr = format!("{}:{}", &args.host, &args.port);
     let socket = UdpSocket::bind(addr).unwrap();
     let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) =
