@@ -5,30 +5,23 @@ mod test;
 pub use structs::{parse_r09_telegram};
 
 use dump_dvb::{
-    receivers::RadioReceiver,
     telegrams::{
-        AuthenticationMeta, 
         TelegramType,
         r09::{
-            R09ReceiveTelegram, 
             R09Telegram,
         },
         raw::{
-            RawReceiveTelegram,
             RawTelegram,
         }
     },
 };
 
 use g2poly::G2Poly;
-use reqwest;
-use log::{info, warn};
+use log::info;
 use num_traits::cast::FromPrimitive;
 
 use std::collections::HashMap;
-use std::env;
-use std::time::Duration;
-use std::collections::VecDeque;
+use std::sync::mpsc::SyncSender;
 
 struct RepairedTelegram {
     data: Vec<u8>,
@@ -36,16 +29,16 @@ struct RepairedTelegram {
 }
 
 pub struct Decoder {
-    server: Vec<String>,
-    station_config: RadioReceiver,
+    //server: Vec<String>,
+    //station_config: RadioReceiver,
     maps: Vec<HashMap<u64, Vec<u8>>>,
-    token: String,
-    r09_queue: VecDeque<R09Telegram>,
-    raw_queue: VecDeque<RawTelegram>
+    //token: String,
+    r09_sender: SyncSender<R09Telegram>,
+    raw_sender: SyncSender<RawTelegram>,
 }
 
 impl Decoder {
-    pub async fn new(config: &RadioReceiver, server: &Vec<String>, offline: bool) -> Decoder {
+    pub async fn new(r09_sender: SyncSender<R09Telegram>, raw_sender: SyncSender<RawTelegram>) -> Decoder {
         let mut maps: Vec<HashMap<u64, Vec<u8>>> = Vec::new();
 
         for len in 5..22 {
@@ -138,93 +131,19 @@ impl Decoder {
             maps.push(map)
         }
 
-        let token: String;
-        if offline {
-            token = String::from("");
-        } else {
-            token = env::var("AUTHENTICATION_TOKEN_PATH")
-                .map(|token_path| {
-                    String::from_utf8_lossy(&std::fs::read(token_path).unwrap())
-                        .parse::<String>()
-                        .unwrap()
-                })
-                .unwrap()
-                .lines()
-                .next()
-                .unwrap()
-                .to_string();
-
-        }
-
         Decoder {
-            station_config: config.clone(),
-            server: server.clone(),
             maps: maps,
-            token: token,
-            r09_queue: VecDeque::new(),
-            raw_queue: VecDeque::new()
+            r09_sender: r09_sender,
+            raw_sender: raw_sender,
         }
     }
+
+
 
     pub async fn process(&mut self, data: &[u8]) {
         let data_copy = data.clone();
 
         self.decode(data_copy).await;
-        //if response.len() == 0 {
-        //    return;
-        //}
-
-        let auth = AuthenticationMeta {
-            station: self.station_config.id.clone(),
-            token: self.token.clone(),
-        };
-
-        let client = reqwest::Client::new();
-
-        for telegram in &self.r09_queue {
-            for server in &self.server {
-                let url = format!("{}/telegram/r09", &server);
-                match client
-                    .post(&url)
-                    .timeout(Duration::new(2, 0))
-                    .json(&R09ReceiveTelegram {
-                        auth: auth.clone(),
-                        data: telegram.clone(),
-                    })
-                    .send()
-                    .await
-                {
-                    Err(_) => {
-                        warn!("Connection Timeout! {}", &server);
-                    }
-                    _ => {}
-                }
-            }
-        }
-        self.r09_queue.clear();
-
-        for telegram in &self.raw_queue {
-            for server in &self.server {
-                let url = format!("{}/telegram/raw", &server);
-                match client
-                    .post(&url)
-                    .timeout(Duration::new(2, 0))
-                    .json(&RawReceiveTelegram {
-                        auth: auth.clone(),
-                        data: telegram.clone(),
-                    })
-                    .send()
-                    .await
-                {
-                    Err(_) => {
-                        warn!("Connection Timeout! {}", &server);
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        self.raw_queue.clear();
     }
 
     pub async fn decode(&mut self, data: &[u8]) {
@@ -349,7 +268,7 @@ impl Decoder {
             };
 
             info!("Detected RawTelegram: {:?}", raw_telegram);
-            self.raw_queue.push_back(raw_telegram)
+            self.raw_sender.send(raw_telegram).ok();
         }
 
         // We removed the one variable length telegrams of the R-series R09, others are 3 bytes
@@ -375,7 +294,7 @@ impl Decoder {
             // TODO: if BCD is not BCD, throw it out
             match parse_r09_telegram(data) {
                 Some(data) => {
-                    self.r09_queue.push_back(data);
+                    self.r09_sender.send(data).ok();
                 }
                 None => {}
             }
