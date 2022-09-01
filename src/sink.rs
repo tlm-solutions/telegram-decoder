@@ -8,16 +8,17 @@ use std::time::Duration;
 use std::sync::mpsc::Receiver;
 use log::{warn, error};
 use std::env;
+use reqwest::blocking::Client;
 
 #[derive(Clone, Debug)]
 pub struct DataSinkConfig {
     pub token: String,
-    pub hosts: Vec<String>,
+    pub host: String,
     pub station: RadioReceiver
 }
 
 impl DataSinkConfig {
-    pub fn new(offline: bool, hosts: &Vec<String>, station: RadioReceiver) -> DataSinkConfig {
+    pub fn new(offline: bool, host: &String, station: RadioReceiver) -> DataSinkConfig {
         let token: String;
         if offline {
             token = String::from("");
@@ -37,41 +38,38 @@ impl DataSinkConfig {
         }
         DataSinkConfig {
             token: token,
-            hosts: hosts.clone(),
+            host: host.clone(),
             station: station
         }
     }
 }
 
-pub async fn send_r09(r09_receiver: &mut Receiver<R09Telegram>, sink: &DataSinkConfig) {
+pub fn send_r09(r09_receiver: &mut Receiver<R09Telegram>, sink: &DataSinkConfig) {
     let auth = AuthenticationMeta {
         station: sink.station.id.clone(),
         token: sink.token.clone(),
     };
 
-    let client = reqwest::Client::new();
+    let client = Client::new();
 
     loop {
         let wrapped_telegram = r09_receiver.recv();
         match  wrapped_telegram {
             Ok(telegram) => {
-               for server in &sink.hosts {
-                    let url = format!("{}/telegram/r09", &server);
-                    match client
-                        .post(&url)
-                        .timeout(Duration::from_millis(750))
-                        .json(&R09ReceiveTelegram {
-                            auth: auth.clone(),
-                            data: telegram.clone(),
-                        })
-                        .send()
-                        .await
-                    {
-                        Err(_) => {
-                            warn!("Connection Timeout! {}", &server);
-                        }
-                        _ => {}
+                let url = format!("{}/telegram/r09", &sink.host);
+                match client
+                    .post(&url)
+                    .timeout(Duration::from_millis(750))
+                    .json(&R09ReceiveTelegram {
+                        auth: auth.clone(),
+                        data: telegram.clone(),
+                    })
+                    .send()
+                {
+                    Err(_) => {
+                        warn!("Connection Timeout! {}", &sink.host);
                     }
+                    _ => {}
                 }
             }
             Err(e) => {
@@ -81,35 +79,32 @@ pub async fn send_r09(r09_receiver: &mut Receiver<R09Telegram>, sink: &DataSinkC
     }
 }
 
-pub async fn send_raw(raw_receiver: &mut Receiver<RawTelegram>, sink: &DataSinkConfig) {
+pub fn send_raw(raw_receiver: &mut Receiver<RawTelegram>, sink: &DataSinkConfig) {
     let auth = AuthenticationMeta {
         station: sink.station.id.clone(),
         token: sink.token.clone(),
     };
 
-    let client = reqwest::Client::new();
+    let client = Client::new();
 
     loop {
         let wrapped_telegram = raw_receiver.recv();
         match wrapped_telegram {
             Ok(telegram) => {
-                for server in &sink.hosts {
-                    let url = format!("{}/telegram/raw", &server);
-                    match client
-                        .post(&url)
-                        .timeout(Duration::from_millis(750))
-                        .json(&RawReceiveTelegram {
-                            auth: auth.clone(),
-                            data: telegram.clone(),
-                        })
-                        .send()
-                        .await
-                    {
-                        Err(_) => {
-                            warn!("Connection Timeout! {}", &server);
-                        }
-                        _ => {}
+                let url = format!("{}/telegram/raw", &sink.host);
+                match client
+                    .post(&url)
+                    .timeout(Duration::from_millis(750))
+                    .json(&RawReceiveTelegram {
+                        auth: auth.clone(),
+                        data: telegram.clone(),
+                    })
+                    .send()
+                {
+                    Err(_) => {
+                        warn!("Connection Timeout! {}", &sink.host);
                     }
+                    _ => {}
                 }
             }
             Err(e) => {

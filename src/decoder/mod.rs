@@ -33,12 +33,12 @@ pub struct Decoder {
     //station_config: RadioReceiver,
     maps: Vec<HashMap<u64, Vec<u8>>>,
     //token: String,
-    r09_sender: SyncSender<R09Telegram>,
-    raw_sender: SyncSender<RawTelegram>,
+    r09_senders: Vec<SyncSender<R09Telegram>>,
+    raw_senders: Vec<SyncSender<RawTelegram>>,
 }
 
 impl Decoder {
-    pub async fn new(r09_sender: SyncSender<R09Telegram>, raw_sender: SyncSender<RawTelegram>) -> Decoder {
+    pub async fn new(r09_senders: &Vec<SyncSender<R09Telegram>>, raw_senders: &Vec<SyncSender<RawTelegram>>) -> Decoder {
         let mut maps: Vec<HashMap<u64, Vec<u8>>> = Vec::new();
 
         for len in 5..22 {
@@ -133,8 +133,8 @@ impl Decoder {
 
         Decoder {
             maps: maps,
-            r09_sender: r09_sender,
-            raw_sender: raw_sender,
+            r09_senders: r09_senders.clone(),
+            raw_senders: raw_senders.clone(),
         }
     }
 
@@ -268,7 +268,9 @@ impl Decoder {
             };
 
             info!("Detected RawTelegram: {:?}", raw_telegram);
-            self.raw_sender.send(raw_telegram).ok();
+            for sender in &self.raw_senders {
+                let _ = sender.clone().try_send(raw_telegram.clone());
+            }
         }
 
         // We removed the one variable length telegrams of the R-series R09, others are 3 bytes
@@ -294,7 +296,10 @@ impl Decoder {
             // TODO: if BCD is not BCD, throw it out
             match parse_r09_telegram(data) {
                 Some(data) => {
-                    self.r09_sender.send(data).ok();
+                    info!("[!] Received R09.{}.{}: {:?}", r09_type, r09_length, data);
+                    for sender in &self.r09_senders {
+                        let _ = sender.clone().try_send(data.clone());
+                    }
                 }
                 None => {}
             }
