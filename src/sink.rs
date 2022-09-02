@@ -8,6 +8,8 @@ use std::time::Duration;
 use std::sync::mpsc::Receiver;
 use log::{warn, error};
 use std::env;
+
+use chrono::Utc;
 use reqwest::blocking::Client;
 
 #[derive(Clone, Debug)]
@@ -45,17 +47,18 @@ impl DataSinkConfig {
 }
 
 pub fn send_r09(r09_receiver: &mut Receiver<R09Telegram>, sink: &DataSinkConfig) {
-    let auth = AuthenticationMeta {
-        station: sink.station.id.clone(),
-        token: sink.token.clone(),
-    };
-
     let client = Client::new();
 
     loop {
         let wrapped_telegram = r09_receiver.recv();
         match  wrapped_telegram {
             Ok(telegram) => {
+                let auth = AuthenticationMeta {
+                    station: sink.station.id.clone(),
+                    token: sink.token.clone(),
+                    time: Utc::now().naive_utc()
+                };
+
                 let url = format!("{}/telegram/r09", &sink.host);
                 match client
                     .post(&url)
@@ -80,17 +83,18 @@ pub fn send_r09(r09_receiver: &mut Receiver<R09Telegram>, sink: &DataSinkConfig)
 }
 
 pub fn send_raw(raw_receiver: &mut Receiver<RawTelegram>, sink: &DataSinkConfig) {
-    let auth = AuthenticationMeta {
-        station: sink.station.id.clone(),
-        token: sink.token.clone(),
-    };
-
     let client = Client::new();
 
     loop {
         let wrapped_telegram = raw_receiver.recv();
         match wrapped_telegram {
             Ok(telegram) => {
+                let auth = AuthenticationMeta {
+                    station: sink.station.id.clone(),
+                    token: sink.token.clone(),
+                    time: Utc::now().naive_utc()
+                };
+
                 let url = format!("{}/telegram/raw", &sink.host);
                 match client
                     .post(&url)

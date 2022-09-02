@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dump-dvb = { version = "~0.1", git = "https://github.com/dump-dvb/dump-dvb.rs" }
+dump-dvb = { version = "0.2", git = "https://github.com/dump-dvb/dump-dvb.rs" }
 
 clap = { version = "3.2", features = ["derive"] }
 
@@ -20,6 +20,7 @@ g2poly = "0.4"
 reqwest = { version = "0.11", features = ["blocking", "json"] } # reqwest with JSON parsing support
 tokio = { version = "1.15", features = ["full"] }
 
+chrono = "*"
 num-traits = "*"
 uuid = { version = "=0.8.1", features = [ "serde", "v4"]}
 log = "0.4"
