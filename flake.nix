@@ -10,14 +10,9 @@
     utils = {
       url = "github:numtide/flake-utils";
     };
-
-    stops = {
-      url = "github:dump-dvb/stop-names";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, naersk, utils, stops, ... }:
+  outputs = { self, nixpkgs, naersk, utils, ... }:
     utils.lib.eachDefaultSystem
       (system:
         let
@@ -25,7 +20,6 @@
 
           package = pkgs.callPackage ./derivation.nix {
             naersk = naersk.lib.${system};
-            stops = stops;
           };
         in
         rec {
