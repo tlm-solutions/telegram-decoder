@@ -3,10 +3,10 @@ extern crate derive_builder;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[clap(name = "dump-dvb telegram decode server")]
-#[clap(author = "revol-xut@protonmail.com")]
-#[clap(version = "0.1.0")]
-#[clap(about = "Runns specified captures and extracts times.", long_about = None)]
+#[clap(name = "telegram-decoder")]
+#[clap(author = "dump@dvb.solutions")]
+#[clap(version = "0.2.1")]
+#[clap(about = "Extracts telegram from raw bit streams and sends them.", long_about = None)]
 pub struct Args {
     #[clap(short, long, default_value_t = String::from("127.0.0.1"))]
     pub host: String,
