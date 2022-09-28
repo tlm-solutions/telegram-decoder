@@ -24,6 +24,8 @@ pub struct Args {
     pub offline: bool,
 
     #[clap(short, long, action)]
-    pub verbose: bool
+    pub disable_error_correction: bool,
 
+    #[clap(short, long, action)]
+    pub verbose: bool,
 }

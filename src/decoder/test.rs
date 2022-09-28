@@ -43,7 +43,7 @@ macro_rules! decode_telegrams_from_file {
         let mut senders_r09: Vec<SyncSender<R09Telegram>> = Vec::new();
         senders_r09.push(sender_r09);
 
-        let mut decoder = Decoder::new(&senders_r09, &Vec::new()).await;
+        let mut decoder = Decoder::new(&senders_r09, &Vec::new(), $disable_error_correction).await;
 
         const FILE_STR: &'static str = include_str!($file);
 

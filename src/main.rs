@@ -70,9 +70,13 @@ async fn main() {
         });
     }
 
-    let mut decoder = Decoder::new(&senders_r09, &senders_raw).await;
+    let mut decoder = Decoder::new(&senders_r09, &senders_raw, args.disable_error_correction).await;
 
     info!("Starting DVB Dump Telegram Decoder ... ");
+    if args.disable_error_correction {
+        info!("Error correction is disabled ...");
+    }
+
     let addr = format!("{}:{}", &args.host, &args.port);
     let socket = UdpSocket::bind(addr).unwrap();
     let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) =

@@ -2,19 +2,9 @@ pub mod structs;
 #[cfg(test)]
 mod test;
 
-pub use structs::{parse_r09_telegram};
+pub use structs::parse_r09_telegram;
 
-use dump_dvb::{
-    telegrams::{
-        TelegramType,
-        r09::{
-            R09Telegram,
-        },
-        raw::{
-            RawTelegram,
-        }
-    },
-};
+use dump_dvb::telegrams::{r09::R09Telegram, raw::RawTelegram, TelegramType};
 
 use g2poly::G2Poly;
 use log::info;
@@ -25,7 +15,7 @@ use std::sync::mpsc::SyncSender;
 
 struct RepairedTelegram {
     data: Vec<u8>,
-    number_of_bits_repaired: u32 
+    number_of_bits_repaired: u32,
 }
 
 pub struct Decoder {
@@ -38,37 +28,22 @@ pub struct Decoder {
 }
 
 impl Decoder {
-    pub async fn new(r09_senders: &Vec<SyncSender<R09Telegram>>, raw_senders: &Vec<SyncSender<RawTelegram>>) -> Decoder {
+    pub async fn new(
+        r09_senders: &Vec<SyncSender<R09Telegram>>,
+        raw_senders: &Vec<SyncSender<RawTelegram>>,
+        disable_error_correction: bool,
+    ) -> Decoder {
         let mut maps: Vec<HashMap<u64, Vec<u8>>> = Vec::new();
 
         for len in 5..22 {
             let mut map: HashMap<u64, Vec<u8>> = HashMap::new();
 
-            // 1 bit errors
-            for i in 0..(len * 8) {
-                let mut data = vec![0u8; len];
-                let idx = (i / 8) as usize;
-                let pos = i % 8;
-                data[idx] ^= 1 << pos;
-
-                let value: u64 = Decoder::crc16_remainder(&data).await.0;
-
-                if let Some(_) = map.get(&value) {
-                    assert!(false);
-                } else {
-                    map.insert(value, data);
-                }
-            }
-
-            // 2 bit errors
-            for i in 0..(len * 8) {
-                for j in (i + 1)..(len * 8) {
+            if !disable_error_correction {
+                // 1 bit errors
+                for i in 0..(len * 8) {
                     let mut data = vec![0u8; len];
                     let idx = (i / 8) as usize;
                     let pos = i % 8;
-                    data[idx] ^= 1 << pos;
-                    let idx = (j / 8) as usize;
-                    let pos = j % 8;
                     data[idx] ^= 1 << pos;
 
                     let value: u64 = Decoder::crc16_remainder(&data).await.0;
@@ -79,53 +54,74 @@ impl Decoder {
                         map.insert(value, data);
                     }
                 }
-            }
 
-            // 3 bit errors
-            // this might work sometimes...
-            // so the algorithm for creating the map is a bit more complicated
-            if len < 14 {
-                let mut blacklist: Vec<u64> = Vec::new();
-                let mut map_3bit: HashMap<u64, Vec<u8>> = HashMap::new();
-
+                // 2 bit errors
                 for i in 0..(len * 8) {
                     for j in (i + 1)..(len * 8) {
-                        for k in (j + 1)..(len * 8) {
-                            let mut data = vec![0u8; len];
-                            let idx = (i / 8) as usize;
-                            let pos = i % 8;
-                            data[idx] ^= 1 << pos;
-                            let idx = (j / 8) as usize;
-                            let pos = j % 8;
-                            data[idx] ^= 1 << pos;
-                            let idx = (k / 8) as usize;
-                            let pos = k % 8;
-                            data[idx] ^= 1 << pos;
+                        let mut data = vec![0u8; len];
+                        let idx = (i / 8) as usize;
+                        let pos = i % 8;
+                        data[idx] ^= 1 << pos;
+                        let idx = (j / 8) as usize;
+                        let pos = j % 8;
+                        data[idx] ^= 1 << pos;
 
-                            let value: u64 = Decoder::crc16_remainder(&data).await.0;
+                        let value: u64 = Decoder::crc16_remainder(&data).await.0;
 
-                            // only try to add it, if the value is not allready corrected by 1 or 2 bit
-                            // error correction
-                            if None == map.get(&value) {
-                                if let Some(_) = map_3bit.get(&value) {
-                                    // throw out the value if it occurs multiple times (hamming
-                                    // distance too low)
-                                    map_3bit.remove(&value);
-                                    blacklist.push(value);
-                                } else {
-                                    // add the value if it is not in the blacklist (hamming distance
-                                    // too low)
-                                    if blacklist.iter().all(|&v| v != value) {
-                                        map_3bit.insert(value, data);
+                        if let Some(_) = map.get(&value) {
+                            assert!(false);
+                        } else {
+                            map.insert(value, data);
+                        }
+                    }
+                }
+
+                // 3 bit errors
+                // this might work sometimes...
+                // so the algorithm for creating the map is a bit more complicated
+                if len < 14 {
+                    let mut blacklist: Vec<u64> = Vec::new();
+                    let mut map_3bit: HashMap<u64, Vec<u8>> = HashMap::new();
+
+                    for i in 0..(len * 8) {
+                        for j in (i + 1)..(len * 8) {
+                            for k in (j + 1)..(len * 8) {
+                                let mut data = vec![0u8; len];
+                                let idx = (i / 8) as usize;
+                                let pos = i % 8;
+                                data[idx] ^= 1 << pos;
+                                let idx = (j / 8) as usize;
+                                let pos = j % 8;
+                                data[idx] ^= 1 << pos;
+                                let idx = (k / 8) as usize;
+                                let pos = k % 8;
+                                data[idx] ^= 1 << pos;
+
+                                let value: u64 = Decoder::crc16_remainder(&data).await.0;
+
+                                // only try to add it, if the value is not allready corrected by 1 or 2 bit
+                                // error correction
+                                if None == map.get(&value) {
+                                    if let Some(_) = map_3bit.get(&value) {
+                                        // throw out the value if it occurs multiple times (hamming
+                                        // distance too low)
+                                        map_3bit.remove(&value);
+                                        blacklist.push(value);
+                                    } else {
+                                        // add the value if it is not in the blacklist (hamming distance
+                                        // too low)
+                                        if blacklist.iter().all(|&v| v != value) {
+                                            map_3bit.insert(value, data);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                // extend the map with 3 bit error correction values
-                map.extend(map_3bit);
+                    // extend the map with 3 bit error correction values
+                    map.extend(map_3bit);
+                }
             }
 
             maps.push(map)
@@ -137,8 +133,6 @@ impl Decoder {
             raw_senders: raw_senders.clone(),
         }
     }
-
-
 
     pub async fn process(&mut self, data: &[u8]) {
         let data_copy = data.clone();
@@ -184,12 +178,10 @@ impl Decoder {
 
             if rem == G2Poly(0) {
                 // no errors, decode
-                telegrams.push(
-                    RepairedTelegram {
-                        data: (&telegram_array[0..(telegram_length - 2)]).to_vec(), 
-                        number_of_bits_repaired: 0u32
-                    }
-                );
+                telegrams.push(RepairedTelegram {
+                    data: (&telegram_array[0..(telegram_length - 2)]).to_vec(),
+                    number_of_bits_repaired: 0u32,
+                });
             } else {
                 // errors. try to fix them
                 if let Some(error) = self.maps[telegram_length - MINIMUM_SIZE].get(&rem.0) {
@@ -207,16 +199,15 @@ impl Decoder {
 
                     telegrams.push(RepairedTelegram {
                         data: (&repaired_telegram[0..(telegram_length - 2)]).to_vec(),
-                        number_of_bits_repaired: error.iter().map(|x| x.count_ones()).sum()
+                        number_of_bits_repaired: error.iter().map(|x| x.count_ones()).sum(),
                     });
                 }
             }
 
             for telegram in telegrams {
-                self.parse_telegram(&telegram).await 
+                self.parse_telegram(&telegram).await
             }
         }
-
     }
 
     // data is a vector of data without crc
@@ -264,7 +255,7 @@ impl Decoder {
 
             let raw_telegram = RawTelegram {
                 telegram_type: telegram_type,
-                data: repair_telegram.data.clone()
+                data: repair_telegram.data.clone(),
             };
 
             info!("Detected RawTelegram: {:?}", raw_telegram);
