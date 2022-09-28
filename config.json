@@ -1,6 +1,7 @@
 {
+    "id": "fc3d7d08-f91a-453b-a3e9-db3382fd7380",
     "name": "Barkhausen/Turmlabor",
+    "region": 0,
     "lat": 51.026107,
-    "lon": 13.623566,
-    "station_id": 100
+    "lon": 13.623566
 }

@@ -1,9 +1,11 @@
-//mod decoder;
 use crate::decoder::Decoder;
-use telegrams::{R09Telegram, RadioStation};
-use stop_names::R09Types;
-use serde::{Deserialize};
-use uuid::Uuid;
+use dump_dvb::{locations::R09Types, telegrams::r09::R09Telegram};
+use serde::Deserialize;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::sync::mpsc;
+use std::sync::mpsc::SyncSender;
 
 extern crate derive_builder;
 
@@ -17,7 +19,6 @@ struct TelegramFrame {
     ln: u32,
     kn: u32,
     zn: u32,
-    r: u32,
     zl: u32,
     junction: u32,
     junction_number: u32,
@@ -30,9 +31,22 @@ struct ValidR09_16Telegram {
     output: TelegramFrame,
 }
 
+pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
+}
+
 macro_rules! decode_telegrams_from_file {
-    ($file: expr, $decoder: expr ) => {{
+    ($file: expr, $disable_error_correction: expr) => {{
+        let (sender_r09, receiver_r09) = mpsc::sync_channel(1);
+        let mut senders_r09: Vec<SyncSender<R09Telegram>> = Vec::new();
+        senders_r09.push(sender_r09);
+
+        let mut decoder = Decoder::new(&senders_r09, &Vec::new()).await;
+
         const FILE_STR: &'static str = include_str!($file);
+
         let parsed: Vec<ValidR09_16Telegram> =
             serde_json::from_str(&FILE_STR).expect("JSON was not well-formatted");
 
@@ -41,72 +55,40 @@ macro_rules! decode_telegrams_from_file {
 
             let expected_telegram = R09Telegram {
                 telegram_type: R09Types::R16,
-                delay: Some((2i32 - telegram.zv as i32) * (telegram.zw as i32)),
+                delay: Some((telegram.zv as i32 * -2i32 + 1i32) * (telegram.zw as i32)),
                 reporting_point: telegram.mp,
                 junction: telegram.junction,
-                direction: telegram.ha as u8,
+                direction: telegram.junction_number as u8,
                 request_status: telegram.request_status as u8,
                 priority: Some(telegram.pr as u8),
-                direction_request: Some(telegram.junction_number as u8),
+                direction_request: Some(telegram.ha as u8),
                 line: Some(telegram.ln),
                 run_number: Some(telegram.kn),
                 destination_number: Some(telegram.zn),
                 train_length: Some(telegram.zl as u8),
                 vehicle_number: None,
-                operator: None
-
-                /*time_stamp: 0,
-                line: format!("{:0>3}", telegram.await.ln.to_string()),
-                destination_number: format!("{:0>3}", telegram.zn.to_string()),
-                priority: telegram.pr,
-                sign_of_deviation: telegram.zv,
-                value_of_deviation: telegram.zw,
-                reporting_point: telegram.mp,
-                request_for_priority: telegram.ha,
-                run_number: format!("{:0>2}", telegram.kn.to_string()),
-                reserve: telegram.r,
-                train_length: telegram.zl,
-                junction: telegram.junction,
-                junction_number: telegram.junction_number,
-                request_status: telegram.request_status, */
+                operator: None,
             };
 
-            let received_telegram = decoder.decode(&item.input.as_ref());
+            decoder.process(&item.input.as_ref()).await;
+            let received_telegram = receiver_r09.recv().unwrap();
 
-            assert_eq!(received_telegram[0], expected_telegram);
+            assert_eq!(
+                calculate_hash(&received_telegram),
+                calculate_hash(&expected_telegram)
+            );
 
-            println!("{}", received_telegram[0]);
             println!("{}/{} OK", i + 1, parsed.len());
         }
     }};
 }
 
-#[test]
-fn test_decode_valid_r09_16_telegrams() {
-    let config = RadioStation {
-        id: Uuid::new_v4(),
-        name: "test".to_string(),
-        lat: 0.0,
-        lon: 0.0,
-        region: "dvb".to_string(),
-    };
-    let server = vec!["mockup".to_string()];
-
-    let decoder = Decoder::new(&config, &server).await;
-    decode_telegrams_from_file!("../../data/valid_r09_16_telegrams.json", decoder);
+#[tokio::test]
+async fn test_decode_valid_r09_16_telegrams() {
+    decode_telegrams_from_file!("../../data/valid_r09_16_telegrams.json", true);
 }
 
-#[test]
-fn test_decode_1bit_error_r09_16_telegrams() {
-    let config = RadioStation {
-        id: Uuid::new_v4(),
-        name: "test".to_string(),
-        lat: 0.0,
-        lon: 0.0,
-        region: "dvb".to_string(),
-    };
-    let server = vec!["mockup".to_string()];
-
-    let decoder = Decoder::new(&config, &server).await;
-    decode_telegrams_from_file!("../../data/1bit_error_r09_16_telegrams.json", decoder);
+#[tokio::test]
+async fn test_decode_1bit_error_r09_16_telegrams() {
+    decode_telegrams_from_file!("../../data/1bit_error_r09_16_telegrams.json", false);
 }
