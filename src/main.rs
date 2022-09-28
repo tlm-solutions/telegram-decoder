@@ -34,8 +34,7 @@ use std::net::UdpSocket;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, SyncSender};
 
-#[tokio::main]
-async fn main() {
+fn main() {
     env_logger::init();
 
     const BUFFER_SIZE: usize = 2048;
@@ -70,7 +69,7 @@ async fn main() {
         });
     }
 
-    let mut decoder = Decoder::new(&senders_r09, &senders_raw, args.disable_error_correction).await;
+    let mut decoder = Decoder::new(&senders_r09, &senders_raw, args.disable_error_correction);
 
     info!("Starting DVB Dump Telegram Decoder ... ");
     if args.disable_error_correction {
@@ -82,12 +81,13 @@ async fn main() {
     let (tx, rx): (SyncSender<[u8; BUFFER_SIZE]>, Receiver<[u8; BUFFER_SIZE]>) =
         mpsc::sync_channel(400);
 
-    let _thread_decode = tokio::spawn(async move {
+    let _thread_decode = thread::spawn(move || {
         loop {
             let data = rx.recv().unwrap();
-            decoder.process(&data).await;
+            decoder.process(&data);
         }
     });
+
     loop {
         let mut buffer = [0; BUFFER_SIZE];
         let (_amt, _src) = socket.recv_from(&mut buffer).unwrap();

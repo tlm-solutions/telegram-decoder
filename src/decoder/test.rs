@@ -43,7 +43,7 @@ macro_rules! decode_telegrams_from_file {
         let mut senders_r09: Vec<SyncSender<R09Telegram>> = Vec::new();
         senders_r09.push(sender_r09);
 
-        let mut decoder = Decoder::new(&senders_r09, &Vec::new(), $disable_error_correction).await;
+        let mut decoder = Decoder::new(&senders_r09, &Vec::new(), $disable_error_correction);
 
         const FILE_STR: &'static str = include_str!($file);
 
@@ -70,7 +70,7 @@ macro_rules! decode_telegrams_from_file {
                 operator: None,
             };
 
-            decoder.process(&item.input.as_ref()).await;
+            decoder.process(&item.input.as_ref());
             let received_telegram = receiver_r09.recv().unwrap();
 
             assert_eq!(
@@ -83,12 +83,12 @@ macro_rules! decode_telegrams_from_file {
     }};
 }
 
-#[tokio::test]
-async fn test_decode_valid_r09_16_telegrams() {
+#[test]
+fn test_decode_valid_r09_16_telegrams() {
     decode_telegrams_from_file!("../../data/valid_r09_16_telegrams.json", true);
 }
 
-#[tokio::test]
-async fn test_decode_1bit_error_r09_16_telegrams() {
+#[test]
+fn test_decode_1bit_error_r09_16_telegrams() {
     decode_telegrams_from_file!("../../data/1bit_error_r09_16_telegrams.json", false);
 }

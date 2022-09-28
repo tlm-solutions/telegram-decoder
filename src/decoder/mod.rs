@@ -28,7 +28,7 @@ pub struct Decoder {
 }
 
 impl Decoder {
-    pub async fn new(
+    pub fn new(
         r09_senders: &Vec<SyncSender<R09Telegram>>,
         raw_senders: &Vec<SyncSender<RawTelegram>>,
         disable_error_correction: bool,
@@ -46,7 +46,7 @@ impl Decoder {
                     let pos = i % 8;
                     data[idx] ^= 1 << pos;
 
-                    let value: u64 = Decoder::crc16_remainder(&data).await.0;
+                    let value: u64 = Decoder::crc16_remainder(&data).0;
 
                     if let Some(_) = map.get(&value) {
                         assert!(false);
@@ -66,7 +66,7 @@ impl Decoder {
                         let pos = j % 8;
                         data[idx] ^= 1 << pos;
 
-                        let value: u64 = Decoder::crc16_remainder(&data).await.0;
+                        let value: u64 = Decoder::crc16_remainder(&data).0;
 
                         if let Some(_) = map.get(&value) {
                             assert!(false);
@@ -97,7 +97,7 @@ impl Decoder {
                                 let pos = k % 8;
                                 data[idx] ^= 1 << pos;
 
-                                let value: u64 = Decoder::crc16_remainder(&data).await.0;
+                                let value: u64 = Decoder::crc16_remainder(&data).0;
 
                                 // only try to add it, if the value is not allready corrected by 1 or 2 bit
                                 // error correction
@@ -134,13 +134,13 @@ impl Decoder {
         }
     }
 
-    pub async fn process(&mut self, data: &[u8]) {
+    pub fn process(&mut self, data: &[u8]) {
         let data_copy = data.clone();
 
-        self.decode(data_copy).await;
+        self.decode(data_copy);
     }
 
-    pub async fn decode(&mut self, data: &[u8]) {
+    pub fn decode(&mut self, data: &[u8]) {
         // minimum message size is 3 bytes + 2 bytes crc
         const MINIMUM_SIZE: usize = 5;
         // C09 fixed size of 4 bytes + variable length 4 bits (15 bytes) + 2 bytes CRC
@@ -153,7 +153,7 @@ impl Decoder {
             if (i + 1) * 9 - 1 >= data.len() {
                 break;
             }
-            byte_array.push(Decoder::bit_to_bytes(&data[i * 9..(i + 1) * 9 - 1]).await);
+            byte_array.push(Decoder::bit_to_bytes(&data[i * 9..(i + 1) * 9 - 1]));
         }
 
         //let mut collection: Vec<Box<dyn AbstractTelegram>> = Vec::new();
@@ -172,7 +172,7 @@ impl Decoder {
             telegram_array[telegram_length - 2] ^= 0xff;
             telegram_array[telegram_length - 1] ^= 0xff;
 
-            let rem = Decoder::crc16_remainder(&telegram_array).await;
+            let rem = Decoder::crc16_remainder(&telegram_array);
 
             let mut telegrams: Vec<RepairedTelegram> = Vec::new();
 
@@ -193,7 +193,7 @@ impl Decoder {
                     }
 
                     assert_eq!(
-                        Decoder::crc16_remainder(&repaired_telegram).await,
+                        Decoder::crc16_remainder(&repaired_telegram),
                         G2Poly(0)
                     );
 
@@ -205,7 +205,7 @@ impl Decoder {
             }
 
             for telegram in telegrams {
-                self.parse_telegram(&telegram).await
+                self.parse_telegram(&telegram)
             }
         }
     }
@@ -213,7 +213,7 @@ impl Decoder {
     // data is a vector of data without crc
     // TODO: change this into a vector. There is the possibilty for a valid R09 telegram being a
     // valid C09 telegram and vice versa.
-    async fn parse_telegram(&mut self, repair_telegram: &RepairedTelegram) {
+    fn parse_telegram(&mut self, repair_telegram: &RepairedTelegram) {
         let mode: u8 = repair_telegram.data[0] >> 4;
         let length: usize = repair_telegram.data.len();
 
@@ -233,7 +233,7 @@ impl Decoder {
         if mode == 9 {
             // parse R09.x
             if 3 + (repair_telegram.data[1] & 0xf) as usize == length {
-                return self.parse_r09(&repair_telegram.data).await;
+                return self.parse_r09(&repair_telegram.data);
             }
             // parse C09.x
             if 4 + (repair_telegram.data[2] & 0xf) as usize == length {
@@ -275,7 +275,7 @@ impl Decoder {
         };
     }
 
-    async fn parse_r09(&mut self, data: &[u8]) {
+    fn parse_r09(&mut self, data: &[u8]) {
         // lower nibble of the mode
         let r09_type = data[0] & 0xf;
         let r09_length = data[1] & 0xf;
@@ -300,7 +300,7 @@ impl Decoder {
     }
 
     // converts a list of bits into a single byte
-    async fn bit_to_bytes(data: &[u8]) -> u8 {
+    fn bit_to_bytes(data: &[u8]) -> u8 {
         if data.len() != 8 {
             return 0;
         } else {
@@ -316,7 +316,7 @@ impl Decoder {
         }
     }
 
-    async fn crc16_remainder(data: &Vec<u8>) -> G2Poly {
+    fn crc16_remainder(data: &Vec<u8>) -> G2Poly {
         const POLY: G2Poly = G2Poly(0x16f63);
         const ALPHA: G2Poly = G2Poly(0b10);
 
