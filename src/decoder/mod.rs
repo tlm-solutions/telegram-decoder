@@ -283,19 +283,17 @@ impl Decoder {
         assert_eq!(3 + r09_length as usize, data.len());
 
         // decode R09.1x
+        info!("[!] Recevied R09.{}.{}", r09_type, r09_length);
         if r09_type == 1 && r09_length == 6 {
             // TODO: if BCD is not BCD, throw it out
             match parse_r09_telegram(data) {
                 Some(data) => {
-                    info!("[!] Received R09.{}.{}: {:?}", r09_type, r09_length, data);
                     for sender in &self.r09_senders {
                         let _ = sender.clone().try_send(data.clone());
                     }
                 }
                 None => {}
             }
-        } else {
-            info!("[!] Recevied R09.{}.{}", r09_type, r09_length);
         }
     }
 
