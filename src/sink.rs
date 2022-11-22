@@ -6,7 +6,7 @@ use dump_dvb::{
 };
 use std::time::Duration;
 use std::sync::mpsc::Receiver;
-use log::{warn, error};
+use log::{warn, error, debug};
 use std::env;
 
 use chrono::Utc;
@@ -23,8 +23,11 @@ impl DataSinkConfig {
     pub fn new(offline: bool, host: &String, station: RadioReceiver) -> DataSinkConfig {
         let token: String;
         if offline {
+            debug!("offline mode no token required");
             token = String::from("");
         } else {
+            debug!("reading token from {:?}", env::var("AUTHENTICATION_TOKEN_PATH"));
+
             token = env::var("AUTHENTICATION_TOKEN_PATH")
                 .map(|token_path| {
                     String::from_utf8_lossy(&std::fs::read(token_path).unwrap())
