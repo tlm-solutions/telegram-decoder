@@ -37,6 +37,12 @@
         inherit (self.packages.${prev.system})
           telegram-decoder;
       };
+  
+      nixosModules = rec {
+        default = telegram-decoder;
+        telegram-decoder = import ./nixos-module;
+      };
+
       hydraJobs =
         let
           hydraSystems = [
