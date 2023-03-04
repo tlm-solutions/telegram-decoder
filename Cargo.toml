@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dump-dvb = { version = "0.6", git = "https://github.com/dump-dvb/dump-dvb.rs", features = ["telegrams", "receivers"]}
+tlms = { version = "0.7", git = "https://github.com/tlm-solutions/tlms.rs", features = ["telegrams", "receivers"]}
 
-clap = { version = "3.2", features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
 
 derive_builder = "0.11"
 serde = "1.0"
