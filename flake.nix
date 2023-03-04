@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     naersk = {
       url = "github:nix-community/naersk";
@@ -27,6 +27,9 @@
           packages = {
             telegram-decoder = package;
             default = package;
+          };
+          devShells.default = pkgs.mkShell {
+            nativeBuildInputs = (with packages.telegram-decoder; nativeBuildInputs ++ buildInputs);
           };
         }
       ) // {
