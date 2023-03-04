@@ -4,7 +4,7 @@ mod test;
 
 pub use structs::parse_r09_telegram;
 
-use dump_dvb::telegrams::{r09::R09Telegram, raw::RawTelegram, TelegramType};
+use tlms::telegrams::{r09::R09Telegram, raw::RawTelegram, TelegramType};
 
 use g2poly::G2Poly;
 use log::info;

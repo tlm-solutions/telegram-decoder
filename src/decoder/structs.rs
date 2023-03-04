@@ -1,6 +1,6 @@
 extern crate derive_builder;
 
-pub use dump_dvb::{
+pub use tlms::{
     telegrams::r09::R09Telegram,
     locations::R09Types
 };
