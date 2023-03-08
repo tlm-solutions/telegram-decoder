@@ -1,5 +1,6 @@
-# Telegram Decoder ![](https://img.shields.io/endpoint?url=https%3A%2F%2Fhydra.hq.c3d2.de%2Fjob%2Fdvb-dump%2Fdecode-server%2Ftelegram-decoder.x86_64-linux%2Fshield)
+# Telegram Decoder 
 
+![](https://img.shields.io/endpoint?url=https%3A%2F%2Fhydra.hq.c3d2.de%2Fjob%2Ftlm-solutions%2Ftelegram-decoder%2Ftelegram-decoder.x86_64-linux%2Fshield)
 ![built with nix](https://builtwithnix.org/badge.svg)
 
 
