@@ -1,12 +1,12 @@
 [package]
 name = "telegram-decoder"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tlms = { version = "0.7", git = "https://github.com/tlm-solutions/tlms.rs", features = ["telegrams", "receivers"]}
+tlms = { version = "0.8", git = "https://github.com/tlm-solutions/tlms.rs", tag = "v0.8.0", features = ["telegrams", "receivers"]}
 
 clap = { version = "4", features = ["derive"] }
 
