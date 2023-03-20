@@ -1,9 +1,6 @@
 extern crate derive_builder;
 
-pub use tlms::{
-    telegrams::r09::R09Telegram,
-    locations::R09Types
-};
+pub use tlms::telegrams::r09::{ R09Telegram, R09Type };
 
 #[derive(Debug)]
 pub struct BCD(pub u32);
@@ -28,8 +25,8 @@ impl BCD {
 pub fn parse_r09_telegram(byte_array: &[u8]) -> Option<R09Telegram> {
 
     let telegram_type = match byte_array[1] & 0xf {
-        4 => R09Types::R14,
-        6 => R09Types::R16,
+        4 => R09Type::R14,
+        6 => R09Type::R16,
         _ => return None,
     };
 
@@ -48,14 +45,14 @@ pub fn parse_r09_telegram(byte_array: &[u8]) -> Option<R09Telegram> {
     };
     let destination =
         match telegram_type {
-            R09Types::R16 => match BCD::parse(&[byte_array[7] >> 4, byte_array[7] & 0xf, byte_array[8] >> 4]) {
+            R09Type::R16 => match BCD::parse(&[byte_array[7] >> 4, byte_array[7] & 0xf, byte_array[8] >> 4]) {
                     Some(x) => Some(x.0),
                     None => return None,
                 },
             _ => None,
         };
     let train_length = match telegram_type {
-        R09Types::R16 => Some(byte_array[8] & 0x7),
+        R09Type::R16 => Some(byte_array[8] & 0x7),
         _ => None,
     };
 
@@ -65,9 +62,9 @@ pub fn parse_r09_telegram(byte_array: &[u8]) -> Option<R09Telegram> {
     let value_of_deviation = ((byte_array[1] >> 4) & 0x7) as i32; //ZW Zahlen Wert
 
     Some(R09Telegram {
-        telegram_type: telegram_type,
+        r09_type: telegram_type,
         delay: Some((sign_of_deviation * -2 + 1) * value_of_deviation),
-        reporting_point: reporting_point, //MP Melde punkt
+        reporting_point, //MP Melde punkt
         junction: (reporting_point >> 2) / 10,
         direction: ((reporting_point >> 2) % 10) as u8,
         request_status: (reporting_point & 0x3) as u8,
@@ -76,7 +73,7 @@ pub fn parse_r09_telegram(byte_array: &[u8]) -> Option<R09Telegram> {
         line: Some(line),                        // LN Line Nummer
         run_number: Some(run),                   // KN Kurse Nummer
         destination_number: destination,         // ZN Zielnummer
-        train_length: train_length,              // ZL length
+        train_length: train_length.map(|v| v.into()),              // ZL length
         vehicle_number: None,
         operator: None,
     })
