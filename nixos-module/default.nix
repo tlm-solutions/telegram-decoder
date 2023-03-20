@@ -54,7 +54,10 @@ in
       enable = true;
       wantedBy = [ "multi-user.target" ];
 
-      script = "exec ${pkgs.telegram-decoder}/bin/telegram-decoder --config ${cfg.configFile} --server ${(builtins.concatStringsSep " " cfg.server)} ${if cfg.offline then "--offline" else ""}&";
+      script = let
+        servers = map (x: "--server" + x) cfg.server;
+      in
+      "exec ${pkgs.telegram-decoder}/bin/telegram-decoder --config ${cfg.configFile} ${builtins.concatStringsSep " " servers} ${if cfg.offline then "--offline" else ""}&";
 
       environment = {
         "RUST_LOG" = "${cfg.logLevel}";
