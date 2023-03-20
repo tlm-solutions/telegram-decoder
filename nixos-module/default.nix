@@ -55,7 +55,7 @@ in
       wantedBy = [ "multi-user.target" ];
 
       script = let
-        servers = map (x: "--server" + x) cfg.server;
+        servers = map (x: "--server " + x) cfg.server;
       in
       "exec ${pkgs.telegram-decoder}/bin/telegram-decoder --config ${cfg.configFile} ${builtins.concatStringsSep " " servers} ${if cfg.offline then "--offline" else ""}&";
 
