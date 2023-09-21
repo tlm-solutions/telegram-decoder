@@ -7,7 +7,7 @@ pub use structs::parse_r09_telegram;
 use tlms::telegrams::{r09::R09Telegram, raw::RawTelegram, TelegramType};
 
 use g2poly::G2Poly;
-use log::info;
+use log::{debug, info};
 use num_traits::cast::FromPrimitive;
 
 use std::collections::HashMap;
@@ -137,7 +137,11 @@ impl Decoder {
     pub fn process(&mut self, data: &[u8]) {
         let data_copy = data.clone();
 
-        self.decode(data_copy);
+        debug!("{:?}", &data[0..104]);
+
+        self.decode(&data);
+        self.decode(&data[1..data.len()]);
+        self.decode(&data[2..data.len()]);
     }
 
     pub fn decode(&mut self, data: &[u8]) {
