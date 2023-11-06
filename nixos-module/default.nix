@@ -34,6 +34,11 @@ in
       default = "info";
       description = "under which logLevel the service should run";
     };
+    errorCorrection = mkOption {
+      type = types.bool;
+      default = true;
+      description = "enable or disable error correction";
+    };
   };
 
 
@@ -57,7 +62,7 @@ in
       script = let
         servers = map (x: "--server " + x) cfg.server;
       in
-      "exec ${pkgs.telegram-decoder}/bin/telegram-decoder --config ${cfg.configFile} ${builtins.concatStringsSep " " servers} ${if cfg.offline then "--offline" else ""}&";
+      "exec ${pkgs.telegram-decoder}/bin/telegram-decoder --config ${cfg.configFile} ${builtins.concatStringsSep " " servers} ${if cfg.offline then "--offline" else ""} ${if cfg.errorCorrection then "" else "--disable-error-correction"}&";
 
       environment = {
         "RUST_LOG" = "${cfg.logLevel}";
