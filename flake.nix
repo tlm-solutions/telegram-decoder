@@ -27,6 +27,12 @@
           packages = {
             telegram-decoder = package;
             default = package;
+            docs = (pkgs.nixosOptionsDoc {
+              options = (nixpkgs.lib.nixosSystem {
+                inherit system;
+                modules = [ self.nixosModules.default ];
+              }).options.TLMS;
+            }).optionsCommonMark;
           };
           devShells.default = pkgs.mkShell {
             nativeBuildInputs = (with packages.telegram-decoder; nativeBuildInputs ++ buildInputs);
