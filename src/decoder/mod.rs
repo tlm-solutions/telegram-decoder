@@ -135,8 +135,6 @@ impl Decoder {
     }
 
     pub fn process(&mut self, data: &[u8]) {
-        let data_copy = data.clone();
-
         debug!("{:?}", &data[0..104]);
 
         self.decode(&data);
@@ -196,10 +194,7 @@ impl Decoder {
                         repaired_telegram[i] ^= error[i];
                     }
 
-                    assert_eq!(
-                        Decoder::crc16_remainder(&repaired_telegram),
-                        G2Poly(0)
-                    );
+                    assert_eq!(Decoder::crc16_remainder(&repaired_telegram), G2Poly(0));
 
                     telegrams.push(RepairedTelegram {
                         data: (&repaired_telegram[0..(telegram_length - 2)]).to_vec(),

@@ -1,11 +1,11 @@
 use crate::decoder::Decoder;
-use tlms::{locations::R09Types, telegrams::r09::R09Telegram};
 use serde::Deserialize;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::sync::mpsc;
 use std::sync::mpsc::SyncSender;
+use tlms::telegrams::r09::{R09Telegram, R09Type};
 
 extern crate derive_builder;
 
@@ -54,7 +54,7 @@ macro_rules! decode_telegrams_from_file {
             let telegram = &item.output;
 
             let expected_telegram = R09Telegram {
-                telegram_type: R09Types::R16,
+                r09_type: R09Type::R16,
                 delay: Some((telegram.zv as i32 * -2i32 + 1i32) * (telegram.zw as i32)),
                 reporting_point: telegram.mp,
                 junction: telegram.junction,
@@ -65,7 +65,7 @@ macro_rules! decode_telegrams_from_file {
                 line: Some(telegram.ln),
                 run_number: Some(telegram.kn),
                 destination_number: Some(telegram.zn),
-                train_length: Some(telegram.zl as u8),
+                train_length: Some(telegram.zl as i32),
                 vehicle_number: None,
                 operator: None,
             };
